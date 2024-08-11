@@ -38,15 +38,10 @@
     state: started
   when: crt == "podman"
 
-- name: Check if an installation or upgrade should be performed - docker
+- name: Check if an installation or upgrade should be performed
   shell: docker ps -a -f name=frc-runners-runner --format {%raw%}"{{.Image}}"{%endraw%}
   register: existing_runner
   when: crt == "docker"
-
-- name: Check if an installation or upgrade should be performed - podman
-  shell: podman ps -a -f name=frc-runners-runner --format {%raw%}"{{.Image}}"{%endraw%}
-  register: existing_runner
-  when: crt == "podman"
 
 - name: Create memory settings
   set_fact:
