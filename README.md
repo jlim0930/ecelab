@@ -14,7 +14,7 @@ I created this on my macbook and only tested from the macbook so ymmy with linux
 
 ## INSTALL
 
-- clone the repo
+- clone the repo `git clone git@github.com:jlim0930/ecelab.git`
 - run `gcloud auth application-default login` so that terraform can create GCP resources
 - go into the directory `cd ecelab`
 - run the install script `./deploy.sh` and select the version and OS
