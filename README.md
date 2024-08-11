@@ -9,17 +9,85 @@ You will need the following installed and configured:
 - terraform `brew install terraform`
 - jq `brew install jq`
 - python3 & pip
+- ensure that you have ~/.ssh/google_compute_engine ssh keys that will get you into the GCP hosts
 
-I created this on my macbook and only tested from the macbook so ymmv with linux/windows.
+I created this on my macbook and only tested from the macbook so ymmv with linux
 
 ## INSTALL
 
 - clone the repo `git clone git@github.com:jlim0930/ecelab.git`
 - run `gcloud auth application-default login` so that terraform can create GCP resources
 - go into the directory `cd ecelab`
+- edit `vars` to make the environment closer to you
+
+## USAGE
+
+- go into the directory `cd ecelab`
 - run the install script `./deploy.sh` and select the version and OS
-  - the initial install of ECE onto the first host aka `primary` will take a long time.
-  - once `primary` is installed you can start logging into ECE Admin UI while the 2ndary nodes are installed
+  - the initial install of ECE onto the first host aka `primary` does take a long time.
+  - once `primary` is installed you can start logging into ECE Admin UI while the 2ndary nodes are installed. the URL and the admin users password will be displayed on the screen as the playbook runs
+ 
+```
+$ ./deploy.sh
+[DEBUG] Using Project: elastic-support, Region: us-central1, Zone: us-central1-b, MachineType: n1-standard-8
+
+[DEBUG] Configuring python venv and setting up ansible 9.8.0 - higher ansible versions have issues with EL8
+
+[DEBUG] Select the OS for the ECE Version:
+ 1) 3.3.0
+ 2) 3.4.0
+ 3) 3.4.1
+ 4) 3.5.0
+ 5) 3.5.1
+ 6) 3.6.0
+ 7) 3.6.1
+ 8) 3.6.2
+ 9) 3.7.1
+10) 3.7.2
+#? 3
+[DEBUG] Select the OS for the GCP instances:
+1) Rocky 8 - Podman
+2) Rocky 8 - Docker 20.10
+3) Ubuntu 20.04 - Docker 20.10
+#? 3
+[DEBUG] ECE version: 3.4.1 OS: Ubuntu 20.04 - Docker 20.10
+
+[DEBUG] Creating TFs
+
+[DEBUG] Applying TF to create GCP instances
+
+[DEBUG] Creating instance.yml
+
+[DEBUG] Running ansible scripts for preinstall
+
+[WARNING]: file /Users/jlim/ecelab/roles/eceinstall/tasks/postinstall/main.yml is empty and had no tasks to include
+
+PLAY [all] *********************************************************************************************************************************
+
+TASK [Gathering Facts] *********************************************************************************************************************
+ok: [34.44.17.214]
+ok: [104.154.63.110]
+ok: [34.123.168.105]
+
+TASK [eceinstall : Include OS specific vars] ***********************************************************************************************
+ok: [34.44.17.214] => (item=/Users/jlim/ecelab/roles/eceinstall/vars/os_Ubuntu_20.yml)
+ok: [104.154.63.110] => (item=/Users/jlim/ecelab/roles/eceinstall/vars/os_Ubuntu_20.yml)
+ok: [34.123.168.105] => (item=/Users/jlim/ecelab/roles/eceinstall/vars/os_Ubuntu_20.yml)
+
+TASK [eceinstall : Check that OS is supported] *********************************************************************************************
+skipping: [34.44.17.214]
+skipping: [104.154.63.110]
+skipping: [34.123.168.105]
+
+...
+
+
+```
+
+
+### SIDE NOTES
+- The gcp instances will be named `USERNAME-ecelab-{1|2|3}` and you should be able to ssh to it.
+- if you want to run additional ansible playbooks make sure to activate the venv environment first by `source ecelab/bin/activate`
 
 ## DELETE
 
