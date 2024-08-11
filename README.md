@@ -18,8 +18,8 @@ I created this on my macbook and only tested from the macbook so ymmv with linux
 - run `gcloud auth application-default login` so that terraform can create GCP resources
 - go into the directory `cd ecelab`
 - run the install script `./deploy.sh` and select the version and OS
-  - the initial install of ECE onto the first host aka `prime` will take a long time.
-  - once `prime` is installed you can start logging into ECE Admin UI while the 2ndary nodes are installed
+  - the initial install of ECE onto the first host aka `primary` will take a long time.
+  - once `primary` is installed you can start logging into ECE Admin UI while the 2ndary nodes are installed
 
 ## DELETE
 
