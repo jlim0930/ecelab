@@ -131,6 +131,7 @@ fi
 # Restore the original COLUMNS value
 COLUMNS=$original_columns
 
+echo ""
 echo "${green}[DEBUG]${reset} ECE version: ${blue}${version}${reset} OS: ${blue}${os}${reset}"
 echo ""
 
