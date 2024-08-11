@@ -1,0 +1,8 @@
+PROJECT_ID="elastic-support"
+REGION="us-central1"
+ZONE="us-central1-b"
+TYPE="n1-standard-8"
+
+
+# variables that you can edit to get things closer to you
+# I tried n1-standard-4 and it works sometimes and fails due to lack of memory and cpu at other times

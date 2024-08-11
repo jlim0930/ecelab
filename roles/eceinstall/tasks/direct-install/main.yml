@@ -1,0 +1,9 @@
+---
+- include_tasks: setup_xfs.yml
+
+- name: Reboot the machine with all defaults
+  reboot:
+    msg: "Reboot for changes to take effect initiated by Ansible"
+    post_reboot_delay: 10
+
+- include_tasks: ../preinstall/general/setup_mount_permissions.yml

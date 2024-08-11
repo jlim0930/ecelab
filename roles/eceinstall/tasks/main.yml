@@ -1,0 +1,11 @@
+---
+- name: Preinstall OS configurations
+  import_tasks: preinstall/main.yml
+  tags: [preinstall]
+
+- name: ECE install
+  import_tasks: ece-bootstrap/main.yml
+  tags: [ece]
+
+- name: Postinstall configurations
+  import_tasks: postinstall/main.yml

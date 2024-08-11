@@ -1,0 +1,14 @@
+---
+- hosts: primary
+  gather_facts: true
+  roles:
+    - eceinstall
+  vars:
+    ece_primary: true
+
+- hosts: secondary:tertiary
+  gather_facts: true
+  roles:
+    - eceinstall
+  vars:
+    ece_roles: [director, coordinator, proxy, allocator]

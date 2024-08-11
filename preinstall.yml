@@ -1,0 +1,6 @@
+---
+# Run base tasks in parallel across all hosts
+- hosts: all
+  gather_facts: true
+  roles:
+    - eceinstall

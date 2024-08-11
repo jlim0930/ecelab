@@ -1,0 +1,61 @@
+---
+- name: Stop the podman service
+  systemd:
+    name: podman
+    state: stopped
+
+- name: Ensures /etc/systemd/system/podman.socket.d dir exists
+  file:
+    path: /etc/systemd/system/podman.socket.d
+    state: directory
+
+- name: Create service.d podman.conf
+  template:
+    src: podman.conf.j2
+    dest: /etc/systemd/system/podman.socket.d/podman.conf
+
+- name: Remove var/lib/podman
+  file:
+    path: /var/lib/podman
+    state: absent
+    force: yes
+
+- name: Create /usr/bin/docker with podman-remote command
+  copy:
+    dest: /usr/bin/docker
+    content: |
+      #!/bin/bash
+      podman-remote --url unix:///var/run/docker.sock "$@"
+    mode: '0755'  # Ensure the script is executable
+    owner: root
+    group: root
+
+- name: Replace runroot line in /etc/containers/storage.conf
+  lineinfile:
+    path: /etc/containers/storage.conf
+    regexp: '^\s*runroot\s*='
+    line: 'runroot = "/mnt/data/docker/runroot/"'
+    backrefs: yes
+    insertafter: '^\[storage\]'
+    state: present
+
+- name: Replace graphroot line in /etc/containers/storage.conf
+  lineinfile:
+    path: /etc/containers/storage.conf
+    regexp: '^\s*graphroot\s*='
+    line: 'graphroot = "/mnt/data/docker"'
+    backrefs: yes
+    insertafter: '^\[storage\]'
+    state: present
+
+- name: Podman daemon is enabled and systemd has read all changes
+  systemd:
+    name: podman
+    enabled: yes
+    daemon_reload: yes
+
+- name: podman-restart is enabled and systemd has read all changes
+  systemd:
+    name: podman-restart
+    enabled: yes
+    daemon_reload: yes
