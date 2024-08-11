@@ -10,7 +10,7 @@ You will need the following installed and configured:
 - jq `brew install jq`
 - python3 & pip
 
-I created this on my macbook and only tested from the macbook so ymmy with linux/windows.
+I created this on my macbook and only tested from the macbook so ymmv with linux/windows.
 
 ## INSTALL
 
