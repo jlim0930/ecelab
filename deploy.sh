@@ -239,13 +239,24 @@ echo ""
 sleep 30
 ansible-playbook -i inventory.yml preinstall.yml --tags preinstall  --extra-vars "crt=${container} ece_version=${version}"
 
-echo "${green}[DEBUG]${reset} Running ansible scripts for ECE install - Primary install does take a while......"
-echo ""
+if [ $? -eq 0 ]; then
+  echo "${green}[DEBUG]${reset} Running ansible scripts for ECE install - Primary install does take a while......"
+  echo ""
+else
+  echo "${red}[DEBUG]${reset} Something went wrong... exiting please remember to run ${blue}terraform destroy -auto-approve${reset} to delete the environment"
+  exit
+fi
+
 sleep 10
 ansible-playbook -i inventory.yml eceinstall.yml --tags ece  --extra-vars "crt=${container} ece_version=${version}"
 
-echo ""
-echo "${green}[DEBUG]${reset} And we are done! the URL and the password is listed above"
-echo ""
-echo "${gree}[DEBUG]${reset} When you are done and want to delete the workload come back to this directory and run ${blue}terraform destroy -auto-approve${reset}"
-echo ""
+if [ $? -eq 0 ]; then
+  echo ""
+  echo "${green}[DEBUG]${reset} And we are done! the URL and the password is listed above"
+  echo ""
+  echo "${gree}[DEBUG]${reset} When you are done and want to delete the workload come back to this directory and run ${blue}terraform destroy -auto-approve${reset}"
+  echo ""
+else
+  echo "${red}[DEBUG]${reset} Something went wrong... exiting please remember to run ${blue}terraform destroy -auto-approve${reset} to delete the environment"
+  exit
+fi
