@@ -81,7 +81,24 @@ skipping: [34.123.168.105]
 
 ...
 
+TASK [eceinstall : debug] ******************************************************************************************************************
+ok: [104.154.63.110] => {
+    "msg": "Adminconsole password is: AuR1TETBRWjQPPaFJnEsPwzWWlmre2eE9nlJbGmNn5w"
+}
+ok: [34.123.168.105] => {
+    "msg": "Adminconsole password is: AuR1TETBRWjQPPaFJnEsPwzWWlmre2eE9nlJbGmNn5w"
+}
 
+TASK [eceinstall : include_tasks] **********************************************************************************************************
+skipping: [104.154.63.110]
+skipping: [34.123.168.105]
+
+PLAY RECAP *********************************************************************************************************************************
+104.154.63.110             : ok=14   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0
+34.123.168.105             : ok=14   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0
+34.44.17.214               : ok=16   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0
+
+$
 ```
 
 
