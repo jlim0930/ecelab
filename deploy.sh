@@ -75,6 +75,9 @@ select version in "3.3.0" "3.4.0" "3.4.1" "3.5.0" "3.5.1" "3.6.0" "3.6.1" "3.6.2
   esac
 done
 
+echo ""
+echo ""
+
 if [ $(checkversion $version) -ge $(checkversion "3.7.0") ]; then
   # Prompt user for OS selection
   echo "${green}[DEBUG]${reset} Select the OS for the GCP instances:"
