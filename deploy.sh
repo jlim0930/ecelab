@@ -309,8 +309,8 @@ get_private_key_file() {
 check_ssh() {
   local ip=$1
   local private_key_file=$2
-  local retries=50
-  local delay=30
+  local retries=30
+  local delay=15
 
   echo "${green}[DEBUG]${reset} Checking SSH connectivity for $ip..."
 
@@ -373,3 +373,4 @@ else
   echo "${red}[DEBUG]${reset} Something went wrong... exiting please remember to run ${blue}terraform destroy -auto-approve${reset} to delete the environment"
   exit 1
 fi
+
