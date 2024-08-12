@@ -56,6 +56,13 @@ else
   exit 1
 fi
 
+if command -v jq &>/dev/null; then
+  echo ""
+else
+  echo "${red}[DEBUG]${reset} jq is not installed."
+  exit 1
+fi
+
 # Check ssh key
 ANSIBLE_CFG="ansible.cfg"
 KEY_FILE=$(grep '^private_key_file' "$ANSIBLE_CFG" | awk -F '=' '{print $2}' | xargs)
