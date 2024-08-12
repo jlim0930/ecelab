@@ -80,7 +80,7 @@ if [ ! -f "$KEY_FILE" ]; then
 fi
 
 # Confirm the variables
-echo "${green}[DEBUG]${reset} Using Project: ${blue}$PROJECT_ID${reset}, Region: ${blue}$REGION${reset}, Zone: ${blue}$ZONE${reset}, MachineType: ${blue}$TYPE${reset}"
+echo "${green}[DEBUG]${reset} Using Project: ${blue}$PROJECT_ID${reset}, Region: ${blue}$REGION${reset}, MachineType: ${blue}$TYPE${reset}"
 echo ""
 
 #--------------------------------------------------
@@ -214,11 +214,20 @@ provider "google" {
   region  = "$REGION"
 }
 
+data "google_compute_zones" "available" {
+  region = "$REGION"
+}
+
+resource "random_shuffle" "zone_selection" {
+  input        = data.google_compute_zones.available.names
+  result_count = 3
+}
+
 resource  "google_compute_disk" "data_disk" {
   count = 3
   name = "$USERNAME-ecelab-data-disk-\${count.index + 1}"
   type = "pd-standard"
-  zone = "$ZONE"
+  zone  = random_shuffle.zone_selection.result[count.index]
   size = 150
 }
 
@@ -226,7 +235,7 @@ resource "google_compute_instance" "vm_instance" {
   count        = 3
   name         = "$USERNAME-ecelab-\${count.index + 1}"
   machine_type = "$TYPE"
-  zone         = "$ZONE"
+  zone         = random_shuffle.zone_selection.result[count.index]
 
   boot_disk {
     initialize_params {
@@ -258,7 +267,7 @@ output=$(terraform output -json)
 if echo "$output" | grep -q '"instance_ips"'; then
   echo "${red}[DEBUG]${reset} Previous instances found in Terraform output. Proceeding to destroy existing resources..."
   terraform destroy -auto-approve >/dev/null 2>&1
-fi 
+fi
 
 # Initialize and apply Terraform script
 echo "${green}[DEBUG]${reset} Initializing Terraform..."
@@ -391,4 +400,3 @@ else
   echo "${red}[DEBUG]${reset} Something went wrong... exiting please remember to run ${blue}terraform destroy -auto-approve${reset} to delete the environment"
   exit 1
 fi
-
