@@ -254,8 +254,9 @@ ansible-playbook -i inventory.yml eceinstall.yml --tags ece  --extra-vars "crt=$
 if [ $? -eq 0 ]; then
   echo ""
   echo "${green}[DEBUG]${reset} And we are done! the URL and the password is listed above"
+  echo "${green}[DEBUG]${reset} Installed ECE: ${blue}${version}${reset} on ${blue}${os}${reset}"
   echo ""
-  echo "${gree}[DEBUG]${reset} When you are done and want to delete the workload come back to this directory and run ${blue}terraform destroy -auto-approve${reset}"
+  echo "${green}[DEBUG]${reset} When you are done and want to delete the workload come back to this directory and run ${blue}terraform destroy -auto-approve${reset}"
   echo ""
 else
   echo "${red}[DEBUG]${reset} Something went wrong... exiting please remember to run ${blue}terraform destroy -auto-approve${reset} to delete the environment"
