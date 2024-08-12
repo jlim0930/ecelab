@@ -286,6 +286,28 @@ for ((i=0; i<$length; i++)); do
 EOL
 done
 
+# check to ensure that all hosts are reachable
+IP_LIST=$(terraform output -json instance_ips | jq -r '.[]')
+
+# Function to check if an IP is reachable via SSH
+check_ssh() {
+  local ip=$1
+  echo "Checking SSH access for $ip..."
+  ssh -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=no -q "$ip" exit 2>/dev/null
+}
+
+# Loop through IPs until one is reachable
+for IP in $IP_LIST; do
+  if check_ssh "$IP"; then
+    echo "${green}[DEBUG]${reset} Successfully connected to $IP via SSH."
+    exit 0
+  else
+    echo "${red}[DEBUG]${reset} will check again in 5 seconds"
+  fi
+  sleep 5
+done
+
+
 # Run Ansible playbook
 #
 echo "${green}[DEBUG]${reset} Running ansible scripts for preinstall"
