@@ -1,5 +1,5 @@
 ---
-- name: Execute the primary installation - docker - this step takes a WHILE! sit back and enjoy
+- name: Execute the primary installation - this step takes a WHILE! sit back and enjoy
   shell: /home/elastic/elastic-cloud-enterprise.sh
     install 
     --availability-zone {{ availability_zone }} 
@@ -9,28 +9,11 @@
     --memory-settings '{{ memory_settings }}' 
     --runner-id {{ ece_runner_id }} 
     --host-storage-path {{ data_dir }}/elastic 
+    {{ "--podman" if crt == "podman"
     {{ extra_installer_args }}
   become: yes
   become_method: sudo
   become_user: elastic
-  when: crt == "docker"
-
-- name: Execute the primary installation - podman - this step takes a WHILE! sit back and enjoy
-  shell: /home/elastic/elastic-cloud-enterprise.sh
-    install 
-    --availability-zone {{ availability_zone }} 
-    --cloud-enterprise-version {{ ece_version }} 
-    --docker-registry {{ ece_docker_registry }} 
-    --ece-docker-repository {{ ece_docker_repository }} 
-    --memory-settings '{{ memory_settings }}' 
-    --runner-id {{ ece_runner_id }} 
-    --host-storage-path {{ data_dir }}/elastic 
-    --podman
-    {{ extra_installer_args }}
-  become: yes
-  become_method: sudo
-  become_user: elastic
-  when: crt == "podman"  
 
 - name: Remember the bootstrap secrets
   command: cat {{ data_dir }}/elastic/bootstrap-state/bootstrap-secrets.json
