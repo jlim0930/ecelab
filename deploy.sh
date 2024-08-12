@@ -12,6 +12,59 @@ green=`tput setaf 2`
 blue=`tput setaf 14`
 reset=`tput sgr0`
 
+# checks and balances
+
+# Check if python3 exists
+if command -v python3 &>/dev/null; then
+  PYTHON_BIN="python3"
+else
+  # Check if python exists and is version 3 or above
+  if command -v python &>/dev/null; then
+    PYTHON_VERSION=$($(command -v python) --version 2>&1 | awk '{print $2}' | cut -d. -f1)
+    if [ "$PYTHON_VERSION" -ge 3 ]; then
+      PYTHON_BIN="python"
+    else
+      echo "${red}[DEBUG]${reset} Python version 3 or higher is required."
+      exit 1
+    fi
+  else
+    echo "${red}[DEBUG]${reset} Python is not installed."
+    exit 1
+  fi
+fi
+
+# Check if pip3 exists
+if command -v pip3 &>/dev/null; then
+  PIP_BIN="pip3"
+elif command -v pip &>/dev/null; then
+  PIP_BIN="pip"
+  # Ensure pip is for Python 3
+  PIP_PYTHON_VERSION=$($PIP_BIN --version | awk '{print $6}' | cut -d. -f1)
+  if [ "$PIP_PYTHON_VERSION" -lt 3 ]; then
+      echo "${red}[DEBUG]${reset} pip is not associated with Python 3."
+      exit 1
+  fi
+else
+  echo "${red}[DEBUG]${reset} pip is not installed."
+  exit 1
+fi
+
+if command -v terraform &>/dev/null; then
+  echo ""
+else
+  echo "${red}[DEBUG]${reset} Terraform is not installed."
+  exit 1
+fi
+
+# Check ssh key
+ANSIBLE_CFG="ansible.cfg"
+KEY_FILE=$(grep '^private_key_file' "$ANSIBLE_CFG" | awk -F '=' '{print $2}' | xargs)
+KEY_FILE=$(eval echo "$KEY_FILE")
+if [ ! -f "$KEY_FILE" ]; then
+  echo "The file $KEY_FILE does not exist."
+  exit 1
+fi
+
 # Confirm the variables
 echo "${green}[DEBUG]${reset} Using Project: ${blue}$PROJECT_ID${reset}, Region: ${blue}$REGION${reset}, Zone: ${blue}$ZONE${reset}, MachineType: ${blue}$TYPE${reset}"
 echo ""
@@ -21,10 +74,10 @@ echo ""
 # setup env for ansible 9.8.0
 echo "${green}[DEBUG]${reset} Configuring python venv and setting up ansible 9.8.0 - higher ansible versions have issues with EL8"
 echo ""
-python3 -m venv ecelab>/dev/null 2>&1
+$PYTHON_BIN -m venv ecelab>/dev/null 2>&1
 source ecelab/bin/activate >/dev/null 2>&1
-pip install --upgrade pip >/dev/null 2>&1
-pip install ansible==9.8.0 >/dev/null 2>&1
+$PIP_BIN install --upgrade pip >/dev/null 2>&1
+$PIP_BIN install ansible==9.8.0 >/dev/null 2>&1
 
 # function used for version checking and comparing
 checkversion() {
@@ -245,7 +298,7 @@ if [ $? -eq 0 ]; then
   echo ""
 else
   echo "${red}[DEBUG]${reset} Something went wrong... exiting please remember to run ${blue}terraform destroy -auto-approve${reset} to delete the environment"
-  exit
+  exit 1
 fi
 
 sleep 30
@@ -260,5 +313,5 @@ if [ $? -eq 0 ]; then
   echo ""
 else
   echo "${red}[DEBUG]${reset} Something went wrong... exiting please remember to run ${blue}terraform destroy -auto-approve${reset} to delete the environment"
-  exit
+  exit 1
 fi
