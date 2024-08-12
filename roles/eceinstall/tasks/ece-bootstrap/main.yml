@@ -26,22 +26,14 @@
     owner: elastic
   when: docker_config != ""
 
-- name: Ensure the docker service is started - docker
+- name: Ensure the container service is started
   systemd:
-    name: docker
+    name: "{{ 'docker' if crt == 'docker' else 'podman' }}"
     state: started
-  when: crt == "docker"
-
-- name: Ensure the docker service is started - podman
-  systemd:
-    name: podman
-    state: started
-  when: crt == "podman"
 
 - name: Check if an installation or upgrade should be performed
   shell: docker ps -a -f name=frc-runners-runner --format {%raw%}"{{.Image}}"{%endraw%}
   register: existing_runner
-  when: crt == "docker"
 
 - name: Create memory settings
   set_fact:
