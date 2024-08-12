@@ -1,5 +1,5 @@
 ---
-- name: Execute the primary installation - docker
+- name: Execute the primary installation - docker - this step takes a WHILE! sit back and enjoy
   shell: /home/elastic/elastic-cloud-enterprise.sh
     install 
     --availability-zone {{ availability_zone }} 
@@ -15,7 +15,7 @@
   become_user: elastic
   when: crt == "docker"
 
-- name: Execute the primary installation - podman
+- name: Execute the primary installation - podman - this step takes a WHILE! sit back and enjoy
   shell: /home/elastic/elastic-cloud-enterprise.sh
     install 
     --availability-zone {{ availability_zone }} 
