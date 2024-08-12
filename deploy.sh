@@ -170,6 +170,7 @@ resource "google_compute_instance" "vm_instance" {
   attached_disk {
     source      = google_compute_disk.data_disk[count.index].id
     device_name = "data-disk-\${count.index + 1}"
+    auto_delete = true
   }
 
   network_interface {
