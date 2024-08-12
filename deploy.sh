@@ -309,8 +309,8 @@ get_private_key_file() {
 check_ssh() {
   local ip=$1
   local private_key_file=$2
-  local retries=30
-  local delay=15
+  local retries=50
+  local delay=30
 
   echo "${green}[DEBUG]${reset} Checking SSH connectivity for $ip..."
 
