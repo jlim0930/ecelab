@@ -68,7 +68,7 @@ ANSIBLE_CFG="ansible.cfg"
 KEY_FILE=$(grep '^private_key_file' "$ANSIBLE_CFG" | awk -F '=' '{print $2}' | xargs)
 KEY_FILE=$(eval echo "$KEY_FILE")
 if [ ! -f "$KEY_FILE" ]; then
-  echo "The file $KEY_FILE does not exist."
+  echo "The file $KEY_FILE does not exist. Please update ansible.cfg to ensure that the correct private key is specified."
   exit 1
 fi
 
