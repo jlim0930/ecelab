@@ -11,5 +11,11 @@
     - name: Gather facts now that all hosts are reachable
       setup:
 
+  tasks:
+    # Your main tasks go here
+    - name: Example task
+      debug:
+        msg: "This task runs after facts have been gathered."
+        
   roles:
     - role: eceinstall
