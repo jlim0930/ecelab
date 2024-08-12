@@ -254,12 +254,30 @@ output "instance_ips" {
 }
 EOL
 
-# Initialize and apply Terraform script
-echo "${green}[DEBUG]${reset} Applying TF to create GCP instances"
-echo ""
+output=$(terraform output -json)
+if echo "$output" | grep -q '"instances"'; then
+  echo "${red}[DEBUG]${reset} Previous instances found in Terraform output. Proceeding to destroy existing resources..."
+  terraform destroy -auto-approve >/dev/null 2>&1
+fi 
 
+# Initialize and apply Terraform script
+echo "${green}[DEBUG]${reset} Initializing Terraform..."
 terraform init >/dev/null 2>&1
+if [ $? -ne 0 ]; then
+  echo "${red}[DEBUG]${reset} Terraform initialization failed. Exiting."
+  exit 1
+fi
+
+# Run terraform apply and suppress output
+echo "${green}[DEBUG]${reset} Applying Terraform configuration..."
 terraform apply -auto-approve >/dev/null 2>&1
+if [ $? -ne 0 ]; then
+  echo "${red}[DEBUG]${reset} Terraform apply failed. Exiting."
+  exit 1
+fi
+
+echo "${green}[DEBUG]${reset} Terraform apply completed successfully."
+
 
 # create ansible items ---------------------------------------------------
 #
