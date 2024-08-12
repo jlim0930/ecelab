@@ -322,7 +322,7 @@ remove_host_if_exists() {
 # Function to check if an IP is reachable via SSH
 check_ssh() {
   local ip=$1
-  echo "Checking SSH access for $ip..."
+  echo "${green}[DEBUG]${reset} Checking SSH access for $ip..."
   ssh -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=no -q "$ip" exit 2>/dev/null
 }
 
