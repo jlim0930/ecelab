@@ -10,29 +10,15 @@
     msg: "ERROR: OS {{ ansible_distribution }} {{ ansible_distribution_major_version}} is not supported!"
   when: unsupported_version is defined and unsupported_version
 
-- name: Set docker_version to 24.0 if ece_version is greater than 3.7.0
+- name: Set docker_version based on ECE version
   set_fact:
-    docker_version: "24.0"
-  when: 
-    - crt == "docker"
-    - ece_version is version('3.7.0', '>')
+    docker_version: "{{ '24.0' if ece_version is version('3.7.0', '>') else '20.10' }}"
+  when: crt == "docker"
 
-- name: Set docker_version to 20.10 if ece_version is less than 3.7.0
-  set_fact:
-    docker_version: "20.10"
-  when: 
-    - crt == "docker"
-    - ece_version is version('3.7.0', '<')
-
-- name: Set podman_version to 4
+- name: Set podman_version if container runtime is podman
   set_fact:
     podman_version: "4"
-  when:
-    - crt == "podman"
-
-##- name: Set docker version
-##  set_fact:
-##    docker_version: "{{ docker_version | default(docker_version_map.keys()|list|last) }}"
+  when: crt == "podman"
 
 - name: Assert docker version is supported
   assert:
