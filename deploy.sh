@@ -315,7 +315,7 @@ done
 #
 echo "${green}[DEBUG]${reset} Running ansible scripts for preinstall"
 echo ""
-sleep 50
+sleep 10
 ansible-playbook -i inventory.yml preinstall.yml --tags preinstall  --extra-vars "crt=${container} ece_version=${version}"
 
 if [ $? -eq 0 ]; then
@@ -326,7 +326,7 @@ else
   exit 1
 fi
 
-sleep 30
+sleep 10
 ansible-playbook -i inventory.yml eceinstall.yml --tags ece  --extra-vars "crt=${container} ece_version=${version}"
 
 if [ $? -eq 0 ]; then
