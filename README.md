@@ -9,14 +9,15 @@ You will need the following installed and configured:
 - terraform `brew install terraform`
 - jq `brew install jq`
 - python3 & pip
-- ensure that you have ~/.ssh/google_compute_engine ssh keys that will get you into the GCP hosts
+- ensure that you have `~/.ssh/google_compute_engine` ssh keys that will get you into the GCP hosts - if this is named something else you will need to edit `ansible.cfg`
 
 I created this on my macbook and only tested from the macbook so ymmv with linux
 
 ## INSTALL
 
-- clone the repo `git clone git@github.com:jlim0930/ecelab.git`
+- ensure you have all the software required
 - run `gcloud auth application-default login` so that terraform can create GCP resources
+- clone the repo `git clone git@github.com:jlim0930/ecelab.git`
 - go into the directory `cd ecelab`
 - edit `vars` to make the environment closer to you
 
@@ -83,6 +84,14 @@ skipping: [34.123.168.105]
 
 TASK [eceinstall : debug] ******************************************************************************************************************
 ok: [104.154.63.110] => {
+    "msg": "Adminconsole is reachable at: https://34.44.17.214:12443"
+}
+ok: [34.123.168.105] => {
+    "msg": "Adminconsole is reachable at: https://34.44.17.214:12443"
+}
+
+TASK [eceinstall : debug] ******************************************************************************************************************
+ok: [104.154.63.110] => {
     "msg": "Adminconsole password is: AuR1TETBRWjQPPaFJnEsPwzWWlmre2eE9nlJbGmNn5w"
 }
 ok: [34.123.168.105] => {
@@ -117,6 +126,11 @@ When you are done with your work please delete the environment
 - Why was Rocky 8 chosen instead of CentOS? - CentOS8 was EOL'ed by GCP and no longer available.
 - The script will create a python venv and use ansible 9.8.0 instead of the latest.  This is due to an issue with ansible where the latest ansible cannot gather facts or do anything with yum/dnf in EL8 and beyond due to yum/dnf using older python library which is not updated. - https://github.com/ansible/ansible/issues/71668
 - According to the Support Matrix Rocky8 is not supported for ECE 3.3->3.6 however it is still possible to install ECE with some massaging.  Same for running Rocky8 with Podman for 3.3-> 3.6
+
+
+
+
+
 
 
 
