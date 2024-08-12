@@ -1,21 +1,5 @@
 ---
-- name: Ensure all hosts are reachable via SSH and then gather facts
-  hosts: all
-  gather_facts: no
-
-  pre_tasks:
-    - name: Wait for SSH to become available
-      wait_for_connection:
-        timeout: 300
-
-    - name: Gather facts now that all hosts are reachable
-      setup:
-
-  tasks:
-    # Your main tasks go here
-    - name: Example task
-      debug:
-        msg: "This task runs after facts have been gathered."
-        
+- hosts: all
+  gather_facts: true
   roles:
-    - role: eceinstall
+    - eceinstall
