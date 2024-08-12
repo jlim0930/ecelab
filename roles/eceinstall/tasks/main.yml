@@ -1,4 +1,10 @@
 ---
+- name: Wait for SSH to become available
+  ansible.builtin.wait_for_connection:
+    timeout: 60  # Total time to wait for the SSH connection, in seconds
+    delay: 15    # Wait for 15 seconds before the first attempt
+    sleep: 15    # Time to sleep between retries, in seconds
+      
 - name: Preinstall OS configurations
   import_tasks: preinstall/main.yml
   tags: [preinstall]
