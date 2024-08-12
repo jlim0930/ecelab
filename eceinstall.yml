@@ -1,6 +1,16 @@
 ---
-- hosts: primary
-  gather_facts: true
+- name: Ensure all hosts are reachable via SSH and then gather facts
+  hosts: primary
+  gather_facts: no
+
+  pre_tasks:
+    - name: Wait for SSH to become available
+      wait_for_connection:
+        timeout: 300
+
+    - name: Gather facts now that all hosts are reachable
+      setup:
+
   roles:
     - eceinstall
   vars:
