@@ -255,7 +255,7 @@ output "instance_ips" {
 EOL
 
 output=$(terraform output -json)
-if echo "$output" | grep -q '"instances"'; then
+if echo "$output" | grep -q '"instance_ips"'; then
   echo "${red}[DEBUG]${reset} Previous instances found in Terraform output. Proceeding to destroy existing resources..."
   terraform destroy -auto-approve >/dev/null 2>&1
 fi 
