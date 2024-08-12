@@ -14,46 +14,57 @@ reset=`tput sgr0`
 
 # checks and balances
 
-# Check if python3 exists
-if command -v python3 &>/dev/null; then
-  PYTHON_BIN="python3"
-else
-  # Check if python exists and is version 3 or above
-  if command -v python &>/dev/null; then
-    PYTHON_VERSION=$($(command -v python) --version 2>&1 | awk '{print $2}' | cut -d. -f1)
-    if [ "$PYTHON_VERSION" -ge 3 ]; then
-      PYTHON_BIN="python"
-    else
-      echo "${red}[DEBUG]${reset} Python version 3 or higher is required."
-      exit 1
-    fi
+# Function to check Python version
+check_python_version() {
+  local version
+  version=$("$1" --version 2>&1 | awk '{print $2}')
+  if [ "$(echo "$version" | cut -d. -f1)" -ge 3 ]; then
+    PYTHON_BIN="$1"
   else
-    echo "${red}[DEBUG]${reset} Python is not installed."
+    echo "${red}[DEBUG]${reset} Python version 3 or higher is required."
     exit 1
   fi
+}
+
+# Check for python3 or python and validate version
+if command -v python3 &>/dev/null; then
+  PYTHON_BIN="python3"
+elif command -v python &>/dev/null; then
+  check_python_version "python"
+else
+  echo "${red}[DEBUG]${reset} Python is not installed."
+  exit 1
 fi
 
-# Check if pip3 exists
+# Function to check if pip is associated with Python 3
+check_pip_version() {
+  local pip_version
+  pip_version=$("$1" --version | awk '{print $6}' | cut -d. -f1)
+  if [ "$pip_version" -ge 3 ]; then
+    PIP_BIN="$1"
+  else
+    echo "${red}[DEBUG]${reset} pip is not associated with Python 3."
+    exit 1
+  fi
+}
+
+# Check for pip3 or pip and validate version
 if command -v pip3 &>/dev/null; then
   PIP_BIN="pip3"
 elif command -v pip &>/dev/null; then
-  PIP_BIN="pip"
-  # Ensure pip is for Python 3
-  PIP_PYTHON_VERSION=$($PIP_BIN --version | awk '{print $6}' | cut -d. -f1)
-  if [ "$PIP_PYTHON_VERSION" -lt 3 ]; then
-      echo "${red}[DEBUG]${reset} pip is not associated with Python 3."
-      exit 1
-  fi
+  check_pip_version "pip"
 else
   echo "${red}[DEBUG]${reset} pip is not installed."
   exit 1
 fi
 
+# Check for terraform
 command -v terraform &>/dev/null || {
   echo "${red}[DEBUG]${reset} Terraform is not installed."
   exit 1
 }
 
+# Check for jq
 command -v jq &>/dev/null || {
   echo "${red}[DEBUG]${reset} jq is not installed."
   exit 1
@@ -290,8 +301,24 @@ EOL
 done
 
 # check to ensure that all hosts are reachable
-IP_LIST=$(terraform output -json instance_ips | jq -r '.[]')
+KNOWN_HOSTS_FILE="$HOME/.ssh/known_hosts"
+GOOGLE_COMPUTE_KNOWN_HOSTS_FILE="$HOME/.ssh/google_compute_known_hosts"
 
+# Function to remove a host from a file if it exists
+remove_host_if_exists() {
+  local host=$1
+  local file=$2
+  if [ -e "$file" ]; then
+    if grep -q "$host" "$file"; then
+      echo "Removing $host from $file"
+      ssh-keygen -R "$host" -f "$file"
+    else
+      echo "$host not found in $file"
+    fi
+  else
+    echo "$file does not exist"
+  fi
+}
 # Function to check if an IP is reachable via SSH
 check_ssh() {
   local ip=$1
@@ -300,8 +327,10 @@ check_ssh() {
 }
 
 # Loop through IPs until one is reachable
-for IP in $IP_LIST; do
+for IP in $ips; do
   if check_ssh "$IP"; then
+    remove_host_if_exists "$HOST" "$KNOWN_HOSTS_FILE"
+    remove_host_if_exists "$HOST" "$GOOGLE_COMPUTE_KNOWN_HOSTS_FILE"
     echo "${green}[DEBUG]${reset} Successfully connected to $IP via SSH."
     exit 0
   else
@@ -315,7 +344,7 @@ done
 #
 echo "${green}[DEBUG]${reset} Running ansible scripts for preinstall"
 echo ""
-sleep 10
+sleep 15
 ansible-playbook -i inventory.yml preinstall.yml --tags preinstall  --extra-vars "crt=${container} ece_version=${version}"
 
 if [ $? -eq 0 ]; then
@@ -326,7 +355,7 @@ else
   exit 1
 fi
 
-sleep 10
+sleep 15
 ansible-playbook -i inventory.yml eceinstall.yml --tags ece  --extra-vars "crt=${container} ece_version=${version}"
 
 if [ $? -eq 0 ]; then
