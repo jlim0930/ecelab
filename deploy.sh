@@ -49,19 +49,15 @@ else
   exit 1
 fi
 
-if command -v terraform &>/dev/null; then
-  echo ""
-else
+command -v terraform &>/dev/null || {
   echo "${red}[DEBUG]${reset} Terraform is not installed."
   exit 1
-fi
+}
 
-if command -v jq &>/dev/null; then
-  echo ""
-else
+command -v jq &>/dev/null || {
   echo "${red}[DEBUG]${reset} jq is not installed."
   exit 1
-fi
+}
 
 # Check ssh key
 ANSIBLE_CFG="ansible.cfg"
