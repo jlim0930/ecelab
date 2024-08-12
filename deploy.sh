@@ -300,51 +300,55 @@ for ((i=0; i<$length; i++)); do
 EOL
 done
 
-# check to ensure that all hosts are reachable
-KNOWN_HOSTS_FILE="$HOME/.ssh/known_hosts"
-GOOGLE_COMPUTE_KNOWN_HOSTS_FILE="$HOME/.ssh/google_compute_known_hosts"
-
-# Function to remove a host from a file if it exists
-remove_host_if_exists() {
-  local host=$1
-  local file=$2
-  if [ -e "$file" ]; then
-    if grep -q "$host" "$file"; then
-      echo "Removing $host from $file"
-      ssh-keygen -R "$host" -f "$file"
-    else
-      echo "$host not found in $file"
-    fi
-  else
-    echo "$file does not exist"
-  fi
+get_private_key_file() {
+  local config_file="ansible.cfg"
+  grep -E '^private_key_file\s*=' "$config_file" | awk -F '=' '{print $2}' | xargs
 }
-# Function to check if an IP is reachable via SSH
+
+# Function to check SSH connectivity
 check_ssh() {
   local ip=$1
-  echo "${green}[DEBUG]${reset} Checking SSH access for $ip..."
-  ssh -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=no -q "$ip" exit 2>/dev/null
+  local private_key_file=$2
+  local retries=30
+  local delay=15
+
+  echo "${green}[DEBUG]${reset} Checking SSH connectivity for $ip..."
+
+  for ((i=1; i<=retries; i++)); do
+    if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes -i "$private_key_file" "$ip" exit 2>/dev/null; then
+      echo "${green}[DEBUG]${reset} $ip is reachable via SSH."
+      return 0
+    else
+      echo "${red}[DEBUG]${reset} $ip is not reachable via SSH. Retrying in $delay seconds..."
+      sleep $delay
+    fi
+  done
+
+  echo "${red}[DEBUG]${reset} Failed to connect to $ip via SSH after $((retries * delay)) seconds."
+  exit 1
 }
 
-# Loop through IPs until one is reachable
-for IP in $ips; do
-  if check_ssh "$IP"; then
-    remove_host_if_exists "$HOST" "$KNOWN_HOSTS_FILE"
-    remove_host_if_exists "$HOST" "$GOOGLE_COMPUTE_KNOWN_HOSTS_FILE"
-    echo "${green}[DEBUG]${reset} Successfully connected to $IP via SSH."
-    exit 0
-  else
-    echo "${red}[DEBUG]${reset} will check again in 5 seconds"
-  fi
-  sleep 5
+private_key_file=$(get_private_key_file)
+if [ -z "$private_key_file" ]; then
+  echo "${red}[DEBUG]${reset} Error: private_key_file not found in ansible.cfg"
+  exit 1
+fi
+
+# Loop through each IP and check SSH connectivity
+for ip in "${ips[@]}"; do
+  while ! check_ssh "$ip" "$private_key_file"; do
+    echo "${red}[DEBUG]${reset} Retrying connection to $ip..."
+  done
 done
+
+echo "${green}[DEBUG]${reset} All hosts are reachable via SSH. Proceeding with further actions..."
 
 
 # Run Ansible playbook
 #
 echo "${green}[DEBUG]${reset} Running ansible scripts for preinstall"
 echo ""
-sleep 15
+sleep 5
 ansible-playbook -i inventory.yml preinstall.yml --tags preinstall  --extra-vars "crt=${container} ece_version=${version}"
 
 if [ $? -eq 0 ]; then
@@ -355,7 +359,7 @@ else
   exit 1
 fi
 
-sleep 15
+sleep 5
 ansible-playbook -i inventory.yml eceinstall.yml --tags ece  --extra-vars "crt=${container} ece_version=${version}"
 
 if [ $? -eq 0 ]; then
