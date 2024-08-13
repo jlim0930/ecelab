@@ -12,3 +12,4 @@
     - eceinstall
   vars:
     ece_roles: [director, coordinator, proxy, allocator]
+  when: installtype == "small"
