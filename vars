@@ -1,4 +1,4 @@
-PROJECT_ID="elastic-support"
+PROJECT_ID=""  # make sure to add your project name
 REGION="us-central1"
 ZONE="us-central1-b"
 TYPE="n1-standard-8"
