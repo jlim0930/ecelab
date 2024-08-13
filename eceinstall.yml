@@ -8,8 +8,9 @@
 
 - hosts: secondary:tertiary
   gather_facts: true
-  roles:
-    - eceinstall
   vars:
     ece_roles: [director, coordinator, proxy, allocator]
-  when: installtype == "small"
+  tasks:
+    - include_role:
+        name: eceinstall
+      when: installtype == "small"
