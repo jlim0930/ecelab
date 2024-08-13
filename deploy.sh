@@ -480,7 +480,7 @@ else
 fi
 
 sleep 5
-ansible-playbook -i inventory.yml eceinstall.yml --tags ece  --extra-vars "crt=${container} ece_version=${version}"
+ansible-playbook -i inventory.yml eceinstall.yml --tags ece  --extra-vars "crt=${container} ece_version=${version} installtype=${installtype}"
 
 if [ $? -eq 0 ]; then
   echo ""
