@@ -79,9 +79,6 @@ if [ ! -f "$KEY_FILE" ]; then
   exit 1
 fi
 
-# Confirm the variables
-echo "${green}[DEBUG]${reset} Using Project: ${blue}$PROJECT_ID${reset}, Region: ${blue}$REGION${reset}, MachineType: ${blue}$TYPE${reset}"
-echo ""
 
 #--------------------------------------------------
 
@@ -101,6 +98,26 @@ checkversion() {
 # Save the original COLUMNS value
 original_columns=$COLUMNS
 COLUMNS=1
+
+# Prompt for Single instance or 3 instance small install
+echo "${green}[DEBUG]${reset} Select the size:"
+select installtype in "single" "small"; do
+  case $installtype in
+    "single")
+      installtype="single"
+      TYPE="n1-highmem-8"
+      break;;
+    "small")
+      installtype="small"
+      break;;
+    *)
+      echo "Invalid option. Please select again."
+      ;;
+  esac
+done
+
+echo ""
+echo ""
 
 # Prompt for ECE Version selection
 echo "${green}[DEBUG]${reset} Select the OS for the ECE Version:"
@@ -198,8 +215,10 @@ fi
 # Restore the original COLUMNS value
 COLUMNS=$original_columns
 
+# Confirm the variables
 echo ""
-echo "${green}[DEBUG]${reset} ECE version: ${blue}${version}${reset} OS: ${blue}${os}${reset}"
+echo "${green}[DEBUG]${reset} Using Project: ${blue}$PROJECT_ID${reset}, Region: ${blue}$REGION${reset}, MachineType: ${blue}$TYPE${reset}"
+echo "${green}[DEBUG]${reset} ECE version: ${blue}${version}${reset} OS: ${blue}${os}${reset} Install Type: ${blue}${installtype}${reset}"
 echo ""
 
 # terraform -----------------------------------------------
@@ -208,7 +227,8 @@ echo ""
 echo "${green}[DEBUG]${reset} Creating TFs"
 echo ""
 
-cat > main.tf << EOL
+if [ ${installtype} == "small" ]; then
+  cat > main.tf << EOL
 provider "google" {
   project = "$PROJECT_ID"
   region  = "$REGION"
@@ -224,6 +244,13 @@ resource "random_shuffle" "zone_selection" {
 }
 
 resource  "google_compute_disk" "data_disk" {
+  labels = {
+    division = "support"
+    org      = "support"
+    team     = "support"
+    project  = "$USERNAME-ecelab"
+  }
+
   count = 3
   name = "$USERNAME-ecelab-data-disk-\${count.index + 1}"
   type = "pd-standard"
@@ -262,6 +289,69 @@ output "instance_ips" {
   description = "The external IP addresses of the instances"
 }
 EOL
+else
+  cat > main.tf << EOL
+provider "google" {
+  project = "$PROJECT_ID"
+  region  = "$REGION"
+}
+
+data "google_compute_zones" "available" {
+  region = "$REGION"
+}
+
+resource "random_shuffle" "zone_selection" {
+  input        = data.google_compute_zones.available.names
+  result_count = 1
+}
+
+resource  "google_compute_disk" "data_disk" {
+  labels = {
+    division = "support"
+    org      = "support"
+    team     = "support"
+    project  = "$USERNAME-ecelab"
+  }
+
+  count = 1
+  name = "$USERNAME-ecelab-data-disk-\${count.index + 1}"
+  type = "pd-standard"
+  zone  = random_shuffle.zone_selection.result[count.index]
+  size = 150
+}
+
+resource "google_compute_instance" "vm_instance" {
+  count        = 1
+  name         = "$USERNAME-ecelab-\${count.index + 1}"
+  machine_type = "$TYPE"
+  zone         = random_shuffle.zone_selection.result[count.index]
+
+  boot_disk {
+    initialize_params {
+      image = "${image}"
+    }
+  }
+
+  attached_disk {
+    source      = google_compute_disk.data_disk[count.index].id
+    device_name = "data-disk-\${count.index + 1}"
+  }
+
+  network_interface {
+    network = "default"
+
+    access_config {
+    }
+  }
+}
+
+# Define outputs to capture the IP addresses of the instances
+output "instance_ips" {
+  value = google_compute_instance.vm_instance[*].network_interface[0].access_config[0].nat_ip
+  description = "The external IP addresses of the instances"
+}
+EOL
+fi
 
 output=$(terraform output -json)
 if echo "$output" | grep -q '"instance_ips"'; then
@@ -325,6 +415,9 @@ for ((i=0; i<$length; i++)); do
         ${ips[$i]}:
           availability_zone: ${availability_zones[$i]}
 EOL
+  if [ $length = 1 ]; then
+    break
+  fi
 done
 
 get_private_key_file() {
@@ -400,3 +493,4 @@ else
   echo "${red}[DEBUG]${reset} Something went wrong... exiting please remember to run ${blue}terraform destroy -auto-approve${reset} to delete the environment"
   exit 1
 fi
+
