@@ -246,6 +246,10 @@ echo ""
 echo "${green}[DEBUG]${reset} Creating TFs"
 echo ""
 
+# Enable Terraform debug logging and direct output to a file
+export TF_LOG=DEBUG
+export TF_LOG_PATH="./terraform_debug.log"
+
 if [ ${installtype} == "small" ]; then
   cat > main.tf << EOL
 provider "google" {
