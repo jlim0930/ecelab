@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# load vars
+# load vars - Please edit vars file and customize it.
 source vars
 
 # set username
@@ -12,9 +12,31 @@ green=`tput setaf 2`
 blue=`tput setaf 14`
 reset=`tput sgr0`
 
-# checks and balances
+# CHECKS
 
-# Function to check Python version
+# ensure gcloud is available and configured
+check_gcloud_configured() {
+  local default_project=$(gcloud config get-value project --quiet)
+  if [[ -z "$default_project" ]]; then
+    echo "${red}[DEBUG]${reset} gcloud is not configured with a default project. - Please configure gcloud cli"
+    exit 1
+  fi
+}
+
+if command -v gcloud >/dev/null 2>&1; then
+  if check_gcloud_configured; then
+    :
+  else
+    echo "${red}[DEBUG]${reset} Please run 'gcloud init' to configure gcloud."
+    exit 1
+  fi
+else
+  echo "${red}[DEBUG]${reset} gcloud command is not available. Please install the Google Cloud SDK."
+  echo "Installation instructions: https://cloud.google.com/sdk/docs/install"
+fi
+
+
+# ensure python is available 
 check_python_version() {
   local version
   version=$("$1" --version 2>&1 | awk '{print $2}')
@@ -26,7 +48,6 @@ check_python_version() {
   fi
 }
 
-# Check for python3 or python and validate version
 if command -v python3 &>/dev/null; then
   PYTHON_BIN="python3"
 elif command -v python &>/dev/null; then
@@ -36,7 +57,6 @@ else
   exit 1
 fi
 
-# Function to check if pip is associated with Python 3
 check_pip_version() {
   local pip_version
   pip_version=$("$1" --version | awk '{print $6}' | cut -d. -f1)
@@ -48,7 +68,6 @@ check_pip_version() {
   fi
 }
 
-# Check for pip3 or pip and validate version
 if command -v pip3 &>/dev/null; then
   PIP_BIN="pip3"
 elif command -v pip &>/dev/null; then
@@ -58,19 +77,19 @@ else
   exit 1
 fi
 
-# Check for terraform
+# ensure terraform is available
 command -v terraform &>/dev/null || {
   echo "${red}[DEBUG]${reset} Terraform is not installed."
   exit 1
 }
 
-# Check for jq
+# ensure jq is available
 command -v jq &>/dev/null || {
   echo "${red}[DEBUG]${reset} jq is not installed."
   exit 1
 }
 
-# Check ssh key
+# ensure ssh key is available
 ANSIBLE_CFG="ansible.cfg"
 KEY_FILE=$(grep '^private_key_file' "$ANSIBLE_CFG" | awk -F '=' '{print $2}' | xargs)
 KEY_FILE=$(eval echo "$KEY_FILE")
