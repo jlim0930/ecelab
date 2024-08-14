@@ -1,5 +1,5 @@
 PROJECT_ID=""  # make sure to add your project name
-REGION="us-central1"
+REGION="us-central1" # run gcloud compute regions list to see the region list
 TYPE="n1-standard-8" # this setting will be used for small install. For single install n1-highmem-8 will be used.
 
 
