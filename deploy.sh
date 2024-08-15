@@ -36,7 +36,7 @@ else
 fi
 
 
-# ensure python is available 
+# ensure python is available
 check_python_version() {
   local version
   version=$("$1" --version 2>&1 | awk '{print $2}')
@@ -454,7 +454,8 @@ check_ssh() {
   echo "${green}[DEBUG]${reset} Checking SSH connectivity for $ip..."
 
   for ((i=1; i<=retries; i++)); do
-    if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes -i "$private_key_file" "$ip" exit 2>/dev/null; then
+    #if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes -i "$private_key_file" "$ip" exit 2>/dev/null; then
+    if echo "" > /dev/tcp/$ip/22; then
       echo "${green}[DEBUG]${reset} $ip is reachable via SSH."
       return 0
     else
