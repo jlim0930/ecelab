@@ -14,6 +14,12 @@ reset=`tput sgr0`
 
 # CHECKS
 
+# ensure that the project id is set
+if [ -z "$PROJECT_ID" ]; then
+  echo "${red}[DEBUG]${reset} ${blue}PROJECT_ID${reset} is not set on ${blue}vars${reset}.  Please configure it first."
+  exit 1
+fi
+
 # ensure gcloud is available and configured
 check_gcloud_configured() {
   local default_project=$(gcloud config get-value project --quiet)
