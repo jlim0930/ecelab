@@ -12,6 +12,38 @@ green=`tput setaf 2`
 blue=`tput setaf 14`
 reset=`tput sgr0`
 
+# self update
+# Fetch the latest changes from the remote
+git fetch
+
+# Check if your local branch is behind the remote branch
+if ! git diff --quiet HEAD..origin/$(git rev-parse --abbrev-ref HEAD); then
+  echo "${red}[DEBUG]${reset} There is an update to the script  Would you like to pull the latest changes? (yes/y or no/n) [yes]:"
+  read -r response
+  response=${response:-yes}  # Default to 'yes' if no input is provided
+  if [[ "$response" == "yes" || "$response" == "y" ]]; then
+    # Stash any changes to the excluded file if it exists
+    if [ -f "$EXCLUDE_FILE" ]; then
+      git stash push -m "Stash before pull" "$EXCLUDE_FILE"
+    fi
+
+    # Perform the pull
+    git pull
+
+    # Restore the excluded file from the stash if it was stashed
+    if [ -f "$EXCLUDE_FILE" ]; then
+      git checkout stash -- "$EXCLUDE_FILE"
+      git stash drop
+    fi
+  else
+    echo "${red}[DEBUG]${reset} Pull aborted."
+  fi
+else
+  echo "${green}[DEBUG]${reset} Update installed.  Please run ${blue}./deploy.sh${reset} again."
+fi
+
+exit
+
 # CHECKS
 
 # ensure that the project id is set
