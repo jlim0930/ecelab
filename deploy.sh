@@ -461,6 +461,12 @@ for ((i=0; i<$length; i++)); do
           availability_zone: ${availability_zones[$i]}
 EOL
   if [ $length = 1 ]; then
+    cat <<EOL >> inventory.yml
+    secondary:
+      hosts: {}  # Empty group for secondary
+    tertiary:
+      hosts: {}  # Empty group for tertiary
+EOL
     break
   fi
 done
@@ -539,4 +545,3 @@ else
   echo "${red}[DEBUG]${reset} Something went wrong... exiting please remember to run ${blue}terraform destroy -auto-approve${reset} to delete the environment"
   exit 1
 fi
-
