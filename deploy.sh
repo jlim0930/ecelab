@@ -12,6 +12,21 @@ green=`tput setaf 2`
 blue=`tput setaf 14`
 reset=`tput sgr0`
 
+# self update check
+check_for_updates() {
+  changed_files=$(git diff --name-only origin/main | grep -vE '^vars$')
+
+  if [[ "$changed_files" != "" ]]; then
+    echo "${red}[DEBUG]${reset} Updates available for the following files:"
+    echo "$changed_files"
+    echo "${red}[DEBUG]${reset} Please run git pull again to update the files above."
+    echo ""
+  fi
+}
+
+# Call the function
+check_for_updates
+
 # CHECKS
 
 # ensure that the project id is set
