@@ -14,6 +14,7 @@ reset=`tput sgr0`
 
 # self update check
 check_for_updates() {
+  git fetch origin >/dev/null 2>&1
   changed_files=$(git diff --name-only origin/main | grep -vE '^vars$')
 
   if [[ "$changed_files" != "" ]]; then
