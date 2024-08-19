@@ -1,1 +1,3 @@
 ---
+- name: No-op to silence warning about empty file
+  meta: noop
