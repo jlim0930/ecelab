@@ -487,7 +487,7 @@ check_ssh() {
 
   for ((i=1; i<=retries; i++)); do
     #if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes -i "$private_key_file" "$ip" exit 2>/dev/null; then
-    if echo "" > /dev/tcp/$ip/22; then
+    if echo "" > /dev/tcp/$ip/22 >/dev/null 2>&1; then
       echo "${green}[DEBUG]${reset} $ip is reachable via SSH."
       return 0
     else
