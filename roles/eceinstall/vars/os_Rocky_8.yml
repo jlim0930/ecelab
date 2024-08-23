@@ -4,28 +4,31 @@ docker_storage_driver: overlay2
 bootloader_update_command: grub2-mkconfig -o /etc/grub2.cfg
 conntrack_module: ip_conntrack
 
-# Docker version mapping
-docker_version_map:
-##  "19.03":
-##    name: 'Docker-CE'
-##    package:
-##      - docker-ce-19.03.15
-##      - docker-ce-cli-19.03.15
-##      - containerd.io-1.4.3
-##    repo: https://download.docker.com/linux/centos/8/x86_64/stable
-##    keys:
-##      server: https://download.docker.com/linux/centos/gpg
-##      id: 060A 61C5 1B55 8A7F 742B 77AA C52F EB6B 621E 9F35
-  "20.10":
-    name: 'Docker-CE'
-    package:
-      - docker-ce-20.10.8
-      - docker-ce-cli-20.10.8
-      - containerd.io-1.4.3
-    repo: https://download.docker.com/linux/centos/8/x86_64/stable
-    keys:
-      server: https://download.docker.com/linux/centos/gpg
-      id: 060A 61C5 1B55 8A7F 742B 77AA C52F EB6B 621E 9F35
+# # Docker version mapping
+# docker_version_map: "{{ arch_map[ansible_architecture] | default(arch_map.x86_64) }}"
+
+# arch_map:
+#   aarch64:
+#     name: 'Docker-CE'
+#     package:
+#       - docker-ce-20.10.*
+#       - docker-ce-cli-20.10.*
+#       - containerd.io-1.5.*
+#     repo: https://download.docker.com/linux/centos/8/aarch64/stable
+#     keys:
+#       server: https://download.docker.com/linux/centos/gpg
+#       id: 060A 61C5 1B55 8A7F 742B 77AA C52F EB6B 621E 9F35
+#   x86_64:
+#     name: 'Docker-CE'  # Assuming same name for x86_64 arch
+#     package:
+#       - docker-ce-20.10.*  # Assuming same package versions for x86_64 arch
+#       - docker-ce-cli-20.10.*
+#       - containerd.io-1.5.*
+#     repo: https://download.docker.com/linux/centos/8/x86_64/stable
+#     keys:
+#       server: https://download.docker.com/linux/centos/gpg
+#       id: 060A 61C5 1B55 8A7F 742B 77AA C52F EB6B 621E 9F35
+
 
 podman_version_map:
   "4":

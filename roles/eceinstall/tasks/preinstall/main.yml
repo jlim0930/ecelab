@@ -20,6 +20,44 @@
     podman_version: "4"
   when: crt == "podman"
 
+# - name: Set Docker version mapping based on architecture
+#   set_fact:
+#     docker_version_map: >
+#       {{
+#         {
+#           "20.10": {
+#             "name": "Docker-CE",
+#             "package": [
+#               "docker-ce-20.10.*",
+#               "docker-ce-cli-20.10.*",
+#               "containerd.io-1.5*"
+#             ],
+#             "repo": "https://download.docker.com/linux/centos/8/" + 
+#                      (ansible_architecture | ternary('x86_64/stable', 'aarch64/stable')),
+#             "keys": {
+#               "server": "https://download.docker.com/linux/centos/gpg",
+#               "id": "060A 61C5 1B55 8A7F 742B 77AA C52F EB6B 621E 9F35"
+#             }
+#           }
+#         }
+#       }}
+#   when: ansible_architecture in ['x86_64', 'aarch64']
+
+- name: Update Docker version map with correct architecture
+  set_fact:
+    docker_version_map:
+      "20.10":
+        name: 'Docker-CE'
+        package:
+          - docker-ce-20.10.*
+          - docker-ce-cli-20.10.*
+          - containerd.io-1.5.*
+        repo: "https://download.docker.com/linux/centos/8/{{ 'aarch64' if ansible_architecture == 'aarch64' else 'x86_64' }}/stable"
+        keys:
+          server: https://download.docker.com/linux/centos/gpg
+          id: 060A 61C5 1B55 8A7F 742B 77AA C52F EB6B 621E 9F35
+  when: ansible_os_family != "Debian"
+
 - name: Assert docker version is supported
   assert:
     that: "docker_version in docker_version_map.keys()"

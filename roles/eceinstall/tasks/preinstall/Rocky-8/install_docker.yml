@@ -15,12 +15,6 @@
   selinux:
     state: disabled
 
-- name: Add Docker GPG Key
-  rpm_key:
-    key: https://download.docker.com/linux/centos/gpg
-    state: present
-  when: docker_version == '19.03'
-
 - name: Add docker repository
   yum_repository:
     name: "{{ docker_version_map[docker_version]['name'] }}"

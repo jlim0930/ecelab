@@ -7,10 +7,10 @@ source vars
 USERNAME="$(whoami | sed $'s/[^[:alnum:]\t]//g')"
 
 # colors
-red=`tput setaf 1`
-green=`tput setaf 2`
-blue=`tput setaf 14`
-reset=`tput sgr0`
+red=$(tput setaf 1)
+green=$(tput setaf 2)
+blue=$(tput setaf 14)
+reset=$(tput sgr0)
 
 # self update check
 check_for_updates() {
@@ -116,7 +116,7 @@ ANSIBLE_CFG="ansible.cfg"
 KEY_FILE=$(grep '^private_key_file' "$ANSIBLE_CFG" | awk -F '=' '{print $2}' | xargs)
 KEY_FILE=$(eval echo "$KEY_FILE")
 if [ ! -f "$KEY_FILE" ]; then
-  echo "${red}[DEBUG]${reset} The file $KEY_FILE does not exist. Please update ${blue}private_key_file${reset} in ${blue}ansible.cfg${reset} to ensure that the correct private key is specified."
+  echo "${red}[DEBUG]${reset} The file $KEY_FILE does not exist. Please update ${blue}private_key_file${reset} in ${blue}ansible.cfg${reset} to ensure that the correct private key is specified. - https://cloud.google.com/compute/docs/connect/add-ssh-keys"
   exit 1
 fi
 
@@ -146,7 +146,6 @@ select installtype in "single" "small"; do
   case $installtype in
     "single")
       installtype="single"
-      TYPE="n1-highmem-8"
       break;;
     "small")
       installtype="small"
@@ -206,48 +205,136 @@ echo ""
 if [ $(checkversion $version) -ge $(checkversion "3.7.0") ]; then
   # Prompt user for OS selection
   echo "${green}[DEBUG]${reset} Select the OS for the GCP instances:"
-  select os in "Rocky 8 - Podman" "Ubuntu 20.04 - Docker 24.0"; do
+  select os in "Rocky 8 - Podman - x86_64" "Rocky 8 - Podman - arm64" "Ubuntu 20.04 - Docker 24.0 - x86_64" "Ubuntu 20.04 - Docker 24.0 - arm64"; do
     case $os in
-      "Rocky 8 - Podman")
+      "Rocky 8 - Podman - x86_64")
         image="rocky-linux-cloud/rocky-linux-8-optimized-gcp"
         container="podman"
+        DISK2="sdb"
+        if [ ${installtype} == "single" ]; then
+          TYPE="n1-highmem-8"
+        else
+          TYPE="n1-standard-8"
+        fi
         break
         ;;
-      "Ubuntu 20.04 - Docker 24.0")
+      "Rocky 8 - Podman - arm64")
+        image="rocky-linux-cloud/rocky-linux-8-optimized-gcp-arm64"
+        container="podman"
+        DISK2="nvme0n2"
+        if [ ${installtype} == "single" ]; then
+          TYPE="t2a-standard-32"
+        else
+          TYPE="t2a-standard-8"
+        fi
+        break
+        ;;
+      "Ubuntu 20.04 - Docker 24.0 - x86_64")
         image="ubuntu-os-cloud/ubuntu-minimal-2004-lts"
         container="docker"
         dockerversion="24.0"
+        DISK2="sdb"
+        if [ ${installtype} == "single" ]; then
+          TYPE="n1-highmem-8"
+        else
+          TYPE="n1-standard-8"
+        fi
+        break
+        ;;
+      "Ubuntu 20.04 - Docker 24.0 - arm64")
+        image="ubuntu-os-cloud/ubuntu-minimal-2004-lts-arm64"
+        container="docker"
+        dockerversion="24.0"
+        DISK2="nvme0n2"
+        if [ ${installtype} == "single" ]; then
+          TYPE="t2a-standard-32"
+        else
+          TYPE="t2a-standard-8"
+        fi
         break
         ;;
       *)
-        echo "Invalid option. Please select 1 or 2."
+        echo "Invalid option. Please try again."
         ;;
     esac
   done
 elif [ $(checkversion $version) -lt $(checkversion "3.7.0") ]; then
   # Prompt user for OS selection
   echo "${green}[DEBUG]${reset} Select the OS for the GCP instances:"
-  select os in "Rocky 8 - Podman" "Rocky 8 - Docker 20.10" "Ubuntu 20.04 - Docker 20.10"; do
+  select os in "Rocky 8 - Podman - x86_64" "Rocky 8 - Podman - arm64" "Rocky 8 - Docker 20.10 - x86_64" "Rocky 8 - Docker 20.10 - arm64" "Ubuntu 20.04 - Docker 20.10 - x86_64" "Ubuntu 20.04 - Docker 20.10 - arm64"; do
     case $os in
-      "Rocky 8 - Podman")
+      "Rocky 8 - Podman - x86_64")
         image="rocky-linux-cloud/rocky-linux-8-optimized-gcp"
         container="podman"
+        DISK2="sdb"
+        if [ ${installtype} == "single" ]; then
+          TYPE="n1-highmem-8"
+        else
+          TYPE="n1-standard-8"
+        fi
         break
         ;;
-      "Rocky 8 - Docker 20.10")
+      "Rocky 8 - Podman - arm64")
+        image="rocky-linux-cloud/rocky-linux-8-optimized-gcp-arm64"
+        container="podman"
+        DISK2="nvme0n2"
+        if [ ${installtype} == "single" ]; then
+          TYPE="t2a-standard-32"
+        else
+          TYPE="t2a-standard-8"
+        fi
+        break
+        ;;
+      "Rocky 8 - Docker 20.10 - x86_64")
         image="rocky-linux-cloud/rocky-linux-8-optimized-gcp"
         container="docker"
         dockerversion="20.10"
+        DISK2="sdb"
+        if [ ${installtype} == "single" ]; then
+          TYPE="n1-highmem-8"
+        else
+          TYPE="n1-standard-8"
+        fi 
         break
         ;;
-      "Ubuntu 20.04 - Docker 20.10")
+      "Rocky 8 - Docker 20.10 - arm64")
+        image="rocky-linux-cloud/rocky-linux-8-optimized-gcp-arm64"
+        container="docker"
+        dockerversion="20.10"
+        DISK2="nvme0n2"
+        if [ ${installtype} == "single" ]; then
+          TYPE="t2a-standard-32"
+        else
+          TYPE="t2a-standard-8"
+        fi
+        break
+        ;;
+      "Ubuntu 20.04 - Docker 20.10 - x86_64")
         image="ubuntu-os-cloud/ubuntu-minimal-2004-lts"
         container="docker"
         dockerversion="20.10"
+        DISK2="sdb"
+        if [ ${installtype} == "single" ]; then
+          TYPE="n1-highmem-8"
+        else
+          TYPE="n1-standard-8"
+        fi
+        break
+        ;;
+      "Ubuntu 20.04 - Docker 20.10 - arm64")
+        image="ubuntu-os-cloud/ubuntu-minimal-2004-lts-arm64"
+        container="docker"
+        dockerversion="20.10"
+        DISK2="nvme0n2"
+        if [ ${installtype} == "single" ]; then
+          TYPE="t2a-standard-32"
+        else
+          TYPE="t2a-standard-8"
+        fi
         break
         ;;
       *)
-        echo "Invalid option. Please select 1 or 2."
+        echo "Invalid option. Please try again."
         ;;
     esac
   done
@@ -265,12 +352,25 @@ echo ""
 # terraform -----------------------------------------------
 #
 # Generate Terraform script
-echo "${green}[DEBUG]${reset} Creating TFs"
-echo ""
-
 # Enable Terraform debug logging and direct output to a file
 export TF_LOG=DEBUG
 export TF_LOG_PATH="./terraform_debug.log"
+
+echo "${green}[DEBUG]${reset} Creating list of ${blue}zones${reset} from the ${blue}${REGION}${reset} where ${blue}${TYPE}${reset} is available."
+
+ZONES=$(gcloud compute zones list --filter="region:(${REGION})" --format="value(name)")
+VALID_ZONES=()
+for ZONE in $ZONES; do
+    if gcloud compute machine-types describe $TYPE --zone $ZONE &> /dev/null; then
+        VALID_ZONES+=($ZONE)
+    fi
+done
+VALID_ZONES_STRING=$(printf ",\"%s\"" "${VALID_ZONES[@]}")
+VALID_ZONES_STRING=${VALID_ZONES_STRING:1} # Remove the leading comma
+
+echo "valid_zones = [$VALID_ZONES_STRING]" > terraform.tfvars
+
+echo "${green}[DEBUG]${reset} Creating TFs"
 
 if [ ${installtype} == "small" ]; then
   cat > main.tf << EOL
@@ -279,12 +379,13 @@ provider "google" {
   region  = "$REGION"
 }
 
-data "google_compute_zones" "available" {
-  region = "$REGION"
+variable "valid_zones" {
+  description = "List of zones where the machine type is available"
+  type        = list(string)
 }
 
 resource "random_shuffle" "zone_selection" {
-  input        = data.google_compute_zones.available.names
+  input        = var.valid_zones
   result_count = 3
 }
 
@@ -341,12 +442,13 @@ provider "google" {
   region  = "$REGION"
 }
 
-data "google_compute_zones" "available" {
-  region = "$REGION"
+variable "valid_zones" {
+  description = "List of zones where the machine type is available"
+  type        = list(string)
 }
 
 resource "random_shuffle" "zone_selection" {
-  input        = data.google_compute_zones.available.names
+  input        = var.valid_zones
   result_count = 1
 }
 
@@ -444,7 +546,7 @@ cat <<EOL > inventory.yml
 all:
   vars:
     ansible_become: yes
-    device_name: sdb
+    device_name: ${DISK2}
   children:
 EOL
 
