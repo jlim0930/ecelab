@@ -1,0 +1,49 @@
+---
+- name: Add group elastic
+  group:
+    name: elastic
+    state: present
+    gid: "{{ elastic_gid }}"
+  # when: "'elastic' not in ansible_facts.getent_group"
+
+- name: Add group based on crt variable
+  group:
+    name: "{{ 'docker' if crt == 'docker' else 'podman' }}"
+    state: present
+  when: crt in ['docker', 'podman']
+
+- name: Add user elastic
+  user:
+    name: elastic
+    group: elastic
+    groups: "{{ 'docker' if crt == 'docker' else 'podman' }}"
+    uid: "{{ elastic_uid }}"
+    append: yes
+    state: present
+    generate_ssh_key: true
+  when: crt in ['docker', 'podman']
+
+- name: Modify user elastic to include in the appropriate group
+  user:
+    name: elastic
+    groups: "{{ 'docker' if crt == 'docker' else 'podman' }}"
+    append: yes
+  when: crt in ['docker', 'podman']
+
+- name: Set password policy for elastic user
+  lineinfile:
+    path: /etc/sudoers.d/99-ece-users
+    line: 'elastic ALL=(ALL) NOPASSWD:ALL'
+    state: present
+    create: yes
+  register: pwd_policy_set
+  failed_when: pwd_policy_set is failed
+
+- name: Configure boot user
+  template:
+    src: elastic.cfg.j2
+    dest: /etc/cloud/cloud.cfg.d/00-elastic.cfg
+  vars:
+    image_user: elastic
+  register: boot_user_config
+  failed_when: boot_user_config is failed

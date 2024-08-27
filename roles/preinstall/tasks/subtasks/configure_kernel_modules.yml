@@ -1,0 +1,35 @@
+---
+- name: Check if kernel modules are already loaded
+  shell: "lsmod | grep -w {{ item.kernel_module }}"
+  register: module_loaded
+  ignore_errors: true
+  changed_when: false
+  loop:
+    - { name: 'conntrack', kernel_module: '{{ conntrack_module }}' }
+    - { name: 'overlay', kernel_module: 'overlay' }
+  vars:
+    conntrack_module: '{{ conntrack_module }}'
+  failed_when: module_loaded.rc not in [0, 1]
+
+- name: Enable kernel module if not loaded
+  copy:
+    content: "{{ item.kernel_module }}"
+    dest: "/etc/modules-load.d/{{ item.name }}.conf"
+  when: 
+    - "item.kernel_module not in module_loaded.results | map(attribute='stdout') | join(' ')"
+  loop:
+    - { name: 'conntrack', kernel_module: '{{ conntrack_module }}' }
+    - { name: 'overlay', kernel_module: 'overlay' }
+  vars:
+    conntrack_module: '{{ conntrack_module }}'
+  register: module_enabled
+  failed_when:
+    - module_enabled is failed
+    - module_enabled.rc is defined and module_enabled.rc != 0
+
+- name: Skip automatic ephemeral mount in cloud-init
+  copy:
+    dest: /etc/cloud/cloud.cfg.d/01-mounts.cfg
+    content: |
+      mounts:
+        - [ ephemeral0, null ]

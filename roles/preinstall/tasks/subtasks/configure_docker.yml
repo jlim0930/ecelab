@@ -1,0 +1,54 @@
+---
+- name: Stop the Docker service
+  systemd:
+    name: docker
+    state: stopped
+  register: docker_service_stopped
+  failed_when:
+    - docker_service_stopped is failed
+    - docker_service_stopped.rc is defined and docker_service_stopped.rc != 0
+
+- name: Ensure /etc/systemd/system/docker.service.d directory exists
+  file:
+    path: /etc/systemd/system/docker.service.d
+    state: directory
+  register: docker_service_dir
+  failed_when:
+    - docker_service_dir is failed
+    - docker_service_dir.rc is defined and docker_service_dir.rc != 0
+
+- name: Create docker.conf in service.d directory
+  template:
+    src: docker.conf.j2
+    dest: /etc/systemd/system/docker.service.d/docker.conf
+  register: docker_conf_created
+  failed_when:
+    - docker_conf_created is failed
+    - docker_conf_created.rc is defined and docker_conf_created.rc != 0
+
+- name: Remove /var/lib/docker directory
+  file:
+    path: /var/lib/docker
+    state: absent
+    force: yes
+  register: remove_docker_lib
+  failed_when:
+    - remove_docker_lib is failed
+    - remove_docker_lib.rc is defined and remove_docker_lib.rc != 0
+
+- name: Reload systemd
+  command: systemctl daemon-reload
+  register: systemd_reload
+  failed_when:
+    - systemd_reload is failed
+    - systemd_reload.rc is defined and systemd_reload.rc != 0
+
+- name: Ensure Docker daemon is enabled and reload systemd daemon
+  systemd:
+    name: docker
+    enabled: yes
+    state: started
+  register: docker_service_enabled
+  failed_when:
+    - docker_service_enabled is failed
+    - docker_service_enabled.rc is defined and docker_service_enabled.rc != 0

@@ -3,6 +3,10 @@
   file:
     path: "{{ system_limits_file }}"
     state: touch
+  register: create_limits_file
+  failed_when:
+    - create_limits_file is failed
+    - create_limits_file.rc is defined and create_limits_file.rc != 0
 
 - name: Modify pam limits
   pam_limits:
@@ -23,8 +27,16 @@
   - { domain: 'root', limit_type: 'soft', limit_item: 'nofile', value: '1024000' }
   - { domain: 'root', limit_type: 'hard', limit_item: 'nofile', value: '1024000' }
   - { domain: 'root', limit_type: 'soft', limit_item: 'memlock', value: 'unlimited' }
+  register: pam_limits_result
+  failed_when:
+    - pam_limits_result.failed
+    - pam_limits_result.rc is defined and pam_limits_result.rc != 0
 
-- name: Delete /etc/security/limits.d/20-nproc.conf
+- name: Delete /etc/security/limits.d/20-nproc.conf if exists
   file:
     path: /etc/security/limits.d/20-nproc.conf
     state: absent
+  register: delete_nproc_conf
+  failed_when:
+    - delete_nproc_conf is failed
+    - delete_nproc_conf.rc is defined and delete_nproc_conf.rc != 0

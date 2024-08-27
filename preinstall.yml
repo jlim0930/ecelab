@@ -2,4 +2,5 @@
 - hosts: all
   gather_facts: true
   roles:
-    - eceinstall
+    - preinstall
+

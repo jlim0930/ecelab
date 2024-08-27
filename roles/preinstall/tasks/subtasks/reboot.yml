@@ -1,0 +1,23 @@
+---
+- name: Reboot the machine with all defaults
+  reboot:
+    msg: "Reboot for changes to take effect initiated by Ansible"
+    post_reboot_delay: 10
+    reboot_timeout: 600
+  register: reboot_result
+  failed_when:
+    - reboot_result is failed
+    - reboot_result.rc is defined and reboot_result.rc != 0
+
+- name: Wait for host to come back online
+  wait_for_connection:
+    timeout: 300
+  register: wait_result
+  failed_when: wait_result is failed
+  delay: 15
+
+- name: Verify uptime to confirm reboot success
+  command: uptime
+  register: uptime_result
+  failed_when: uptime_result.rc != 0
+  changed_when: false

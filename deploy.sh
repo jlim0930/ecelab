@@ -241,7 +241,7 @@ select_os_and_container() {
           TYPE="n1-highmem-8"
         else
           TYPE="n1-standard-8"
-        fi 
+        fi
         break
         ;;
       "Rocky 8 - Docker 20.10 - arm64")
@@ -581,13 +581,13 @@ setup_ansible
 run_ansible_playbooks() {
   debug "Running ansible scripts for preinstall"
   sleep 5
-  ansible-playbook -i inventory.yml preinstall.yml --tags preinstall --extra-vars "crt=${container} ece_version=${version}"
+  ansible-playbook -i inventory.yml preinstall.yml --extra-vars "crt=${container} ece_version=${version}"
 
   if [ $? -eq 0 ]; then
     debug "Running ansible scripts for ECE install - Primary install does take a while..."
     sleep 5
-    ansible-playbook -i inventory.yml eceinstall.yml --tags ece --extra-vars "crt=${container} ece_version=${version} installtype=${installtype}"
-    
+    ansible-playbook -i inventory.yml eceinstall.yml --extra-vars "crt=${container} ece_version=${version}"
+
     if [ $? -eq 0 ]; then
       debug "And we are done! The URL and the password are listed above."
       debug "Installed ECE: ${blue}${version}${reset} on ${blue}${os}${reset}"

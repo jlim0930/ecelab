@@ -1,4 +1,0 @@
----
-- include_tasks: install_dependencies.yml
-- include_tasks: install_docker.yml
-##  tags: [install_docker, destructive]

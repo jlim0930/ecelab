@@ -1,0 +1,84 @@
+---
+- name: Stop the podman service
+  systemd:
+    name: podman
+    state: stopped
+  register: podman_service_stopped
+  failed_when:
+    - podman_service_stopped is failed
+    - podman_service_stopped.rc is defined and podman_service_stopped.rc != 0
+
+- name: Ensure /etc/systemd/system/podman.socket.d directory exists
+  file:
+    path: /etc/systemd/system/podman.socket.d
+    state: directory
+  register: podman_service_dir
+  failed_when:
+    - podman_service_dir is failed
+    - podman_service_dir.rc is defined and podman_service_dir.rc != 0
+
+- name: Create podman.conf in service.d
+  template:
+    src: podman.conf.j2
+    dest: /etc/systemd/system/podman.socket.d/podman.conf
+  register: podman_conf_created
+  failed_when:
+    - podman_conf_created is failed
+    - podman_conf_created.rc is defined and podman_conf_created.rc != 0
+
+- name: Remove /var/lib/podman if podman.conf was changed
+  file:
+    path: /var/lib/podman
+    state: absent
+    force: yes
+  register: remove_podman_lib
+  failed_when:
+    - remove_podman_lib is failed
+    - remove_podman_lib.rc is defined and remove_podman_lib.rc != 0
+  when: podman_conf_created.changed
+
+- name: Create /usr/bin/docker with podman-remote command
+  copy:
+    dest: /usr/bin/docker
+    content: |
+      #!/bin/bash
+      podman-remote --url unix:///var/run/docker.sock "$@"
+    mode: '0755'
+    owner: root
+    group: root
+  register: docker_created
+  failed_when:
+    - docker_created is failed
+    - docker_created.rc is defined and docker_created.rc != 0
+
+- name: Update storage configuration in /etc/containers/storage.conf
+  lineinfile:
+    path: /etc/containers/storage.conf
+    regexp: "^{{ item.key }}\\s*="
+    line: "{{ item.key }} = \"{{ item.value }}\""
+    insertafter: '^\[storage\]'
+    state: present
+  loop:
+    - { key: 'runroot', value: '/mnt/data/docker/runroot/' }
+    - { key: 'graphroot', value: '/mnt/data/docker' }
+  register: storage_conf
+  failed_when:
+    - storage_conf is failed
+    - storage_conf.rc is defined and storage_conf.rc != 0
+
+- name: Reload systemd
+  command: systemctl daemon-reload
+  register: systemd_reload
+  failed_when:
+    - systemd_reload is failed
+    - systemd_reload.rc is defined and systemd_reload.rc != 0
+
+- name: Ensure podman daemon is enabled and reload systemd daemon
+  systemd:
+    name: podman
+    enabled: yes
+    state: started
+  register: podman_service_enabled
+  failed_when:
+    - podman_service_enabled is failed
+    - podman_service_enabled.rc is defined and podman_service_enabled.rc != 0

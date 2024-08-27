@@ -1,0 +1,111 @@
+---
+- name: Ensure {{ data_dir }} exists
+  file:
+    path: "{{ data_dir }}"
+    state: directory
+  register: data_dir_exists
+  failed_when: data_dir_exists is failed
+
+- name: Create the LVM volume group
+  lvg:
+    vg: lxc
+    pvs: "/dev/{{ device_name }}"
+    force: true
+  register: lvm_vg_created
+  failed_when: lvm_vg_created is failed
+
+- name: Calculate swap size
+  shell: >
+    SWAP_MAX_SIZE=$(vgdisplay --units M lxc | grep "VG Size" | awk '{ print int(0.07*$3) }');
+    grep MemTotal /proc/meminfo | awk -v MAXMEM=${SWAP_MAX_SIZE} '{ mem=int($2/(2*1024)); if(mem>MAXMEM) mem=MAXMEM; print mem; }'
+  register: swap_size
+  changed_when: false
+  failed_when: swap_size.rc != 0
+
+- name: Create swap logical volume
+  lvol:
+    vg: lxc
+    lv: swap
+    size: "{{ swap_size.stdout }}m"
+    force: true
+  register: swap_lv_created
+  failed_when: swap_lv_created is failed
+
+- name: Create data logical volume
+  lvol:
+    vg: lxc
+    lv: data
+    size: 100%FREE
+    shrink: no
+    force: true
+  register: data_lv_created
+  failed_when: data_lv_created is failed
+
+- name: Create swap filesystem on /dev/lxc/swap
+  filesystem:
+    fstype: swap
+    dev: /dev/lxc/swap
+  register: swap_fs_created
+  failed_when: swap_fs_created is failed
+
+- name: Create XFS filesystem on /dev/lxc/data
+  filesystem:
+    fstype: xfs
+    dev: /dev/lxc/data
+  register: data_fs_created
+  failed_when: data_fs_created is failed
+
+- name: Mount /dev/lxc/data
+  mount:
+    path: "{{ data_dir }}"
+    state: mounted
+    src: /dev/lxc/data
+    fstype: xfs
+    opts: "defaults,nofail,x-systemd.automount,prjquota,pquota"
+  register: data_mounted
+  failed_when: data_mounted is failed
+
+- name: Ensure swap is enabled for /dev/lxc/swap
+  mount:
+    name: swap
+    src: "/dev/lxc/swap"
+    fstype: swap
+    opts: "swap"
+    state: present
+  register: swap_mounted
+  failed_when: swap_mounted is failed
+
+- name: Enable all swap devices
+  command: swapon -a
+  register: swapon_all
+  failed_when: swapon_all.rc != 0
+
+- name: Change owner of {{ data_dir }}
+  file:
+    path: "{{ data_dir }}"
+    owner: elastic
+    group: elastic
+    mode: 0700
+    state: directory
+  register: data_dir_owner_changed
+  failed_when: data_dir_owner_changed is failed
+
+- name: Change owner and permissions of {{ data_dir }}/elastic
+  file:
+    path: "{{ data_dir }}/elastic"
+    owner: elastic
+    group: elastic
+    mode: 0700
+    state: directory
+  register: elastic_dir_owner_changed
+  failed_when: elastic_dir_owner_changed is failed
+
+- name: Change owner and permissions of {{ data_dir }}/docker
+  file:
+    path: "{{ data_dir }}/docker"
+    owner: elastic
+    group: elastic
+    mode: 0700
+    state: directory
+  register: docker_dir_owner_changed
+  failed_when: docker_dir_owner_changed is failed

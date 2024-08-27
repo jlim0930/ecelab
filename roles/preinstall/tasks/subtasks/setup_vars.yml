@@ -1,0 +1,28 @@
+---
+- name: Include OS specific vars
+  include_vars: "{{ item }}"
+  with_first_found:
+    - os_{{ ansible_distribution }}_{{ ansible_distribution_major_version }}.yml
+    - unsupported.yml
+  register: os_vars_included
+  failed_when:
+    - os_vars_included.failed
+    - os_vars_included.matched == 0
+
+- name: Ensure OS is supported
+  fail:
+    msg: "ERROR: OS {{ ansible_distribution }} {{ ansible_distribution_major_version }} is not supported!"
+  when: os_specific_vars.unsupported_version is defined and os_specific_vars.unsupported_version
+
+- name: Set container version based on ECE version and runtime
+  set_fact:
+    docker_version: "{{ '24.0' if ece_version is version('3.7.0', '>') else '20.10' }}"
+    podman_version: "4"
+  when: crt in ['docker', 'podman']
+
+- name: Assert Docker version is supported
+  assert:
+    that: 
+      - "docker_version in docker_version_map.keys()"
+    msg: "Docker version must be one of {{ docker_version_map.keys() }}"
+  when: crt == "docker"

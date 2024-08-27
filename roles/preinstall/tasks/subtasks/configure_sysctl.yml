@@ -1,13 +1,12 @@
 ---
-- name: sysctl_scripts.yml || load {{ conntrack_module }} if needed
-  modprobe:
-    name: "{{ conntrack_module }}"
-    state: present
-
 - name: Create sysctl settings file
   file:
     path: "{{ sysctl_settings_file }}"
     state: touch
+  register: sysctl_file_created
+  failed_when:
+    - sysctl_file_created is failed
+    - sysctl_file_created.rc is defined and sysctl_file_created.rc != 0
 
 - name: sysctl_scripts.yml || set sysctl items
   sysctl:
@@ -28,3 +27,15 @@
   -  { name: 'net.netfilter.nf_conntrack_max', value: '262140' }
   -  { name: 'net.ipv4.ip_forward', value: '1'}
   -  { name: 'net.ipv4.tcp_retries2', value: '5'}
+  register: sysctl_set_results
+  failed_when:
+    - sysctl_set_results.failed
+    - sysctl_set_results.rc is defined and sysctl_set_results.rc != 0
+
+- name: Reload sysctl
+  command: sysctl -p
+  register: sysctl_reload
+  when: sysctl_set_results.changed
+  failed_when:
+    - sysctl_reload is failed
+    - sysctl_reload.rc is defined and sysctl_reload.rc != 0

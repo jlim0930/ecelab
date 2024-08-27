@@ -1,0 +1,14 @@
+---
+- name: Reload sysctl
+  command: sysctl -p
+  register: sysctl_reload
+  failed_when:
+    - sysctl_reload is failed
+    - sysctl_reload.rc is defined and sysctl_reload.rc != 0
+
+- name: Reload systemd
+  command: systemctl daemon-reload
+  register: systemd_reload
+  failed_when:
+    - systemd_reload is failed
+    - systemd_reload.rc is defined and systemd_reload.rc != 0

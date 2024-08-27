@@ -1,0 +1,16 @@
+---
+- name: Check if {{ conntrack_module }} is already loaded
+  shell: lsmod | grep -q '^{{ conntrack_module }} '
+  register: lsmod_result
+  changed_when: false
+  failed_when: lsmod_result.rc != 0 and lsmod_result.rc != 1
+  ignore_errors: no
+
+- name: Load {{ conntrack_module }} if needed
+  modprobe:
+    name: "{{ conntrack_module }}"
+    state: present
+  when: lsmod_result.rc == 1
+  register: modprobe_result
+  failed_when: modprobe_result.failed
+  ignore_errors: no

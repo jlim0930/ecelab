@@ -1,0 +1,3 @@
+---
+- name: Install Primary stack
+  ansible.builtin.include_tasks: install_stack.yml

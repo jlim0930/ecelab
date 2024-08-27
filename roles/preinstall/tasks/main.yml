@@ -1,0 +1,38 @@
+---
+- name: Setup variables
+  ansible.builtin.include_tasks: "subtasks/setup_vars.yml"
+
+# - name: Install general/dependencies
+#   ansible.builtin.include_tasks: "subtasks/install_dependencies.yml"
+
+- name: Configure OS specific tasks
+  ansible.builtin.include_tasks: "{{ ansible_distribution }}-{{ ansible_distribution_major_version}}/configure_os.yml"
+
+- name: Install based on crt variable
+  ansible.builtin.include_tasks: "{{ ansible_distribution }}-{{ ansible_distribution_major_version }}/install_{{ crt }}.yml"
+  when: crt in ['docker', 'podman']
+
+- name: Create elastic user
+  ansible.builtin.include_tasks: "subtasks/create_elastic_user.yml"
+
+- name: Configure sysctl
+  ansible.builtin.include_tasks: "subtasks/configure_sysctl.yml"
+
+- name: Configure limits
+  ansible.builtin.include_tasks: "subtasks/configure_limits.yml"
+
+- name: Update GRUB
+  ansible.builtin.include_tasks: "subtasks/update_grub.yml"
+
+- name: Configure filesystem
+  ansible.builtin.include_tasks: "subtasks/configure_filesystem.yml"
+
+- name: Configure kernel modules
+  ansible.builtin.include_tasks: "subtasks/configure_kernel_modules.yml"
+
+- name: Configure based on crt variable
+  ansible.builtin.include_tasks: "subtasks/configure_{{ crt }}.yml"
+  when: crt in ['docker', 'podman']
+
+- name: Reboot
+  ansible.builtin.include_tasks: "subtasks/reboot.yml"
