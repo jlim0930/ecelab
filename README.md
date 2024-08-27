@@ -1,6 +1,6 @@
 # ECELAB via terraform and ansible
 
-This script will create a 3 node ECE cluster in GCP.  It will allow you to install ECE versions 3.3.0 -> 3.7.2 using Rocky 8 or Ubuntu 20.04.  You can select from docker or podman install as well.
+This script will create a single node or 3 node(small) ECE cluster in GCP.  It will allow you to install ECE versions 3.3.0 -> 3.7.2 using Rocky 8 or Ubuntu 20.04.  You can select from docker or podman install as well.
 
 ## REQUIREMENTS
 
