@@ -1,0 +1,43 @@
+- name: Get bearer token
+  uri:
+    url: "https://{{ ece_runner_id }}:12443/api/v1/users/auth/_login"
+    method: POST
+    body:
+      username: "admin"
+      password: "{{ adminconsole_root_password }}"
+    body_format: json
+    validate_certs: no
+  register: bearer
+  retries: 5
+  delay: 5
+  until: bearer is succeeded
+  run_once: true
+
+- name: Set Cluster Endpoints
+  uri:
+    url: "https://{{ ece_runner_id }}:12443/api/v1/platform/configuration/store/cname"
+    method: PUT
+    headers:
+      Authorization: "Bearer {{ bearer.json.token }}"
+    body:
+      value: "{{ outside_ip }}.ip.es.io"
+    body_format: json
+    validate_certs: no
+  register: clusterEndpoint
+  retries: 5
+  delay: 5
+  until: clusterEndpoint is succeeded
+  run_once: true
+
+- name: Accept EULA
+  uri:
+    url: "https://{{ ece_runner_id }}:12443/api/v1/platform/license/eula/_accept"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ bearer.json.token }}"
+    validate_certs: no
+  register: acceptEULA
+  retries: 5
+  delay: 5
+  until: acceptEULA is succeeded
+  run_once: true
