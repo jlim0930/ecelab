@@ -501,6 +501,7 @@ all:
   vars:
     ansible_become: yes
     device_name: ${DISK2}
+    outside_ip: "{{ groups['primary'][0] }}"
   children:
 EOL
 
@@ -579,27 +580,42 @@ setup_ansible
 
 # Run Ansible playbooks
 run_ansible_playbooks() {
-  debug "Running ansible scripts for preinstall"
+  debug "Running ansible scripts"
   sleep 5
-  ansible-playbook -i inventory.yml preinstall.yml --extra-vars "crt=${container} ece_version=${version}"
+  ansible-playbook -i inventory.yml combined.yml --extra-vars "crt=${container} ece_version=${version}"
 
   if [ $? -eq 0 ]; then
-    debug "Running ansible scripts for ECE install - Primary install does take a while..."
-    sleep 5
-    ansible-playbook -i inventory.yml eceinstall.yml --extra-vars "crt=${container} ece_version=${version}"
-
-    if [ $? -eq 0 ]; then
-      debug "And we are done! The URL and the password are listed above."
-      debug "Installed ECE: ${blue}${version}${reset} on ${blue}${os}${reset}"
-      debug "When you are done, and want to delete the workload, run ${blue}terraform destroy -auto-approve${reset}"
-    else
-      debug "Something went wrong... exiting. Please remember to run ${blue}terraform destroy -auto-approve${reset} to delete the environment."
-      exit 1
-    fi
+    debug "And we are done! The URL and the password are listed above."
+    debug "Installed ECE: ${blue}${version}${reset} on ${blue}${os}${reset}"
+    debug "When you are done, and want to delete the workload, run ${blue}terraform destroy -auto-approve${reset}"
   else
-    debug "Something went wrong... exiting. Please remember to run ${blue}terraform destroy -auto-approve${reset} to delete the environment."
+    debug "Something went wrong... exiting. Please look in ${blue}ecelab.log${reset} for issues. Please remember to run ${blue}terraform destroy -auto-approve${reset} to delete the environment."
     exit 1
   fi
 }
+
+# run_ansible_playbooks() {
+#   debug "Running ansible scripts for preinstall"
+#   sleep 5
+#   ansible-playbook -i inventory.yml preinstall.yml --extra-vars "crt=${container} ece_version=${version}"
+
+#   if [ $? -eq 0 ]; then
+#     debug "Running ansible scripts for ECE install - Primary install does take a while..."
+#     sleep 5
+#     ansible-playbook -i inventory.yml eceinstall.yml --extra-vars "crt=${container} ece_version=${version}"
+
+#     if [ $? -eq 0 ]; then
+#       debug "And we are done! The URL and the password are listed above."
+#       debug "Installed ECE: ${blue}${version}${reset} on ${blue}${os}${reset}"
+#       debug "When you are done, and want to delete the workload, run ${blue}terraform destroy -auto-approve${reset}"
+#     else
+#       debug "Something went wrong... exiting. Please remember to run ${blue}terraform destroy -auto-approve${reset} to delete the environment."
+#       exit 1
+#     fi
+#   else
+#     debug "Something went wrong... exiting. Please remember to run ${blue}terraform destroy -auto-approve${reset} to delete the environment."
+#     exit 1
+#   fi
+# }
 
 run_ansible_playbooks
