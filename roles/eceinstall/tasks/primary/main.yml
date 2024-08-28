@@ -1,3 +1,11 @@
 ---
 - name: Install Primary stack
   ansible.builtin.include_tasks: install_stack.yml
+
+- name: Include v1.yml if ece_version >= 3.6.0
+  include_tasks: v1.yml
+  when: ece_version is version('3.6.0', '>=')
+
+- name: Include v0.yml if ece_version < 3.6.0
+  include_tasks: v0.yml
+  when: ece_version is version('3.6.0', '<')
