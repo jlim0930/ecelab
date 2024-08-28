@@ -585,6 +585,7 @@ run_ansible_playbooks() {
   ansible-playbook -i inventory.yml combined.yml --extra-vars "crt=${container} ece_version=${version}"
 
   if [ $? -eq 0 ]; then
+    echo ""
     debug "And we are done! The URL and the password are listed above."
     debug "Installed ECE: ${blue}${version}${reset} on ${blue}${os}${reset}"
     debug "When you are done, and want to delete the workload, run ${blue}terraform destroy -auto-approve${reset}"
