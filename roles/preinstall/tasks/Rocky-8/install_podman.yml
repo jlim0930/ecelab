@@ -17,6 +17,13 @@
 #     - remove_packages is failed
 #     - remove_packages.results | selectattr('rc', 'defined') | map(attribute='rc') | select('ne', 0) | list | length > 0
 
+- name: Install base dependencies
+  yum:
+    name: 
+      - policycoreutils-python-utils
+    state: present
+    update_cache: yes
+
 - name: Install podman
   package:
     name: "{{ podman_version_map[podman_version]['package'] }}"

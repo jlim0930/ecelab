@@ -51,3 +51,11 @@
   failed_when:
     - disable_selinux is failed
     - disable_selinux.rc is defined and disable_selinux.rc != 0
+
+- name: Replace NAME in /etc/os-release based on container runtime
+  lineinfile:
+    path: /etc/os-release
+    regexp: '^NAME="Rocky Linux"$'
+    line: "{{ 'NAME=\"CentOS Linux\"' if crt == 'docker' else 'NAME=\"Red Hat Enterprise\"' }}"
+  when:
+    - ece_version is version('3.7.0', '<')
