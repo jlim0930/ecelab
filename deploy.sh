@@ -190,22 +190,24 @@ select_os_and_container() {
         image="rocky-linux-cloud/rocky-linux-8-optimized-gcp"
         container="podman"
         DISK2="sdb"
-        if [ ${installtype} == "single" ]; then
-          TYPE="n1-highmem-8"
-        else
-          TYPE="n1-standard-8"
-        fi
+        TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+        # if [ ${installtype} == "single" ]; then
+        #   TYPE="n1-highmem-8"
+        # else
+        #   TYPE="n1-standard-8"
+        # fi
         break
         ;;
       "Rocky 8 - Podman - arm64")
         image="rocky-linux-cloud/rocky-linux-8-optimized-gcp-arm64"
         container="podman"
         DISK2="nvme0n2"
-        if [ ${installtype} == "single" ]; then
-          TYPE="t2a-standard-16"
-        else
-          TYPE="t2a-standard-8"
-        fi
+        TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+        # if [ ${installtype} == "single" ]; then
+        #   TYPE="t2a-standard-16"
+        # else
+        #   TYPE="t2a-standard-8"
+        # fi
         break
         ;;
       "Ubuntu 20.04 - Docker 24.0 - x86_64")
@@ -213,11 +215,12 @@ select_os_and_container() {
         container="docker"
         dockerversion="24.0"
         DISK2="sdb"
-        if [ ${installtype} == "single" ]; then
-          TYPE="n1-highmem-8"
-        else
-          TYPE="n1-standard-8"
-        fi
+        TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+        # if [ ${installtype} == "single" ]; then
+        #   TYPE="n1-highmem-8"
+        # else
+        #   TYPE="n1-standard-8"
+        # fi
         break
         ;;
       "Ubuntu 20.04 - Docker 24.0 - arm64")
@@ -225,11 +228,12 @@ select_os_and_container() {
         container="docker"
         dockerversion="24.0"
         DISK2="nvme0n2"
-        if [ ${installtype} == "single" ]; then
-          TYPE="t2a-standard-16"
-        else
-          TYPE="t2a-standard-8"
-        fi
+        TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+        # if [ ${installtype} == "single" ]; then
+        #   TYPE="t2a-standard-16"
+        # else
+        #   TYPE="t2a-standard-8"
+        # fi
         break
         ;;
       "Rocky 8 - Docker 20.10 - x86_64")
@@ -237,11 +241,12 @@ select_os_and_container() {
         container="docker"
         dockerversion="20.10"
         DISK2="sdb"
-        if [ ${installtype} == "single" ]; then
-          TYPE="n1-highmem-8"
-        else
-          TYPE="n1-standard-8"
-        fi
+        TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+        # if [ ${installtype} == "single" ]; then
+        #   TYPE="n1-highmem-8"
+        # else
+        #   TYPE="n1-standard-8"
+        # fi
         break
         ;;
       "Rocky 8 - Docker 20.10 - arm64")
@@ -249,11 +254,12 @@ select_os_and_container() {
         container="docker"
         dockerversion="20.10"
         DISK2="nvme0n2"
-        if [ ${installtype} == "single" ]; then
-          TYPE="t2a-standard-16"
-        else
-          TYPE="t2a-standard-8"
-        fi
+        TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+        # if [ ${installtype} == "single" ]; then
+        #   TYPE="t2a-standard-16"
+        # else
+        #   TYPE="t2a-standard-8"
+        # fi
         break
         ;;
       "Ubuntu 20.04 - Docker 20.10 - x86_64")
@@ -261,11 +267,12 @@ select_os_and_container() {
         container="docker"
         dockerversion="20.10"
         DISK2="sdb"
-        if [ ${installtype} == "single" ]; then
-          TYPE="n1-highmem-8"
-        else
-          TYPE="n1-standard-8"
-        fi
+        TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+        # if [ ${installtype} == "single" ]; then
+        #   TYPE="n1-highmem-8"
+        # else
+        #   TYPE="n1-standard-8"
+        # fi
         break
         ;;
       "Ubuntu 20.04 - Docker 20.10 - arm64")
@@ -273,11 +280,12 @@ select_os_and_container() {
         container="docker"
         dockerversion="20.10"
         DISK2="nvme0n2"
-        if [ ${installtype} == "single" ]; then
-          TYPE="t2a-standard-16"
-        else
-          TYPE="t2a-standard-8"
-        fi
+        TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+        # if [ ${installtype} == "single" ]; then
+        #   TYPE="t2a-standard-16"
+        # else
+        #   TYPE="t2a-standard-8"
+        # fi
         break
         ;;
       *)
