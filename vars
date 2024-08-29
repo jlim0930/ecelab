@@ -1,4 +1,4 @@
-PROJECT_ID=""  # make sure to add your project name
+PROJECT_ID="elastic-support"  # make sure to add your project name
 REGION="us-central1" # run gcloud compute regions list to see the region list
 
 # variables that you can edit to get things closer to you

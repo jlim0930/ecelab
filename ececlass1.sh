@@ -26,7 +26,7 @@ reset=$(tput sgr0)
 # Function to display help
 help() {
   cat << EOF
-This script is to stand up a GCP environment in ${gcp_project} Project
+This script is to stand up a GCP environment in ${PROJECT_ID} Project
 
 ${green}Usage:${reset} ./$(basename "$0") COMMAND
 ${blue}COMMANDS${reset}
@@ -80,10 +80,10 @@ select_image() {
 
 # find
 find_instances() {
-  instance_count=$(gcloud compute instances list --project "${gcp_project}" --filter="name:${gcp_name}" --format="value(name)" | wc -l)
+  instance_count=$(gcloud compute instances list --project "${PROJECT_ID}" --filter="name:${gcp_name}" --format="value(name)" | wc -l)
   if [ "$instance_count" -gt 0 ]; then
     echo "${green}[DEBUG]${reset} Instance(s) found"
-    gcloud compute instances list --project "${gcp_project}" --filter="name:${gcp_name}" --format="table[box](name, zone.basename(), machineType.basename(), status, networkInterfaces[0].networkIP, networkInterfaces[0].accessConfigs[0].natIP, disks[0].licenses[0].basename())"
+    gcloud compute instances list --project "${PROJECT_ID}" --filter="name:${gcp_name}" --format="table[box](name, zone.basename(), machineType.basename(), status, networkInterfaces[0].networkIP, networkInterfaces[0].accessConfigs[0].natIP, disks[0].licenses[0].basename())"
   else
     echo "${red}[DEBUG]${reset} No instances found"
   fi
@@ -122,7 +122,7 @@ create_instances() {
   load_image_list
   select_image
 
-  zones=$(gcloud compute zones list --filter="region:(${gcp_region})" --format="value(name)")
+  zones=$(gcloud compute zones list --filter="region:(${REGION})" --format="value(name)")
   
   for count in $(seq 1 "$max"); do
     gcp_zone=$(get_random_zone)
@@ -132,14 +132,14 @@ create_instances() {
     gcloud compute instances create ${gcp_name}-${count} \
       --quiet \
       --labels ${label} \
-      --project=${gcp_project} \
+      --project=${PROJECT_ID} \
       --zone=${gcp_zone} \
       --machine-type=${machine_type} \
       --network-interface=network-tier=PREMIUM,subnet=default \
       --maintenance-policy=MIGRATE \
       --provisioning-model=STANDARD \
       --create-disk=auto-delete=yes,boot=yes,device-name=${gcp_name}-${count},image=projects/${selected_project}/global/images/${selected_image_name},mode=rw,type=projects/elastic-support/zones/${gcp_zone}/diskTypes/${boot_disk_type} \
-      --create-disk=auto-delete=yes,device-name=${gcp_name}-${count}-data,mode=rw,name=${gcp_name}-${count}-data,size=100,type=${boot_disk_type}
+      --create-disk=auto-delete=yes,device-name=${gcp_name}-${count}-data,mode=rw,name=${gcp_name}-${count}-data,size=100,type=${boot_disk_type} \
       --quiet
   done
 
