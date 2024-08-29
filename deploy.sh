@@ -326,70 +326,14 @@ setup_terraform() {
   debug "Creating Terraform configuration files..."
 
   # Create Terraform main configuration file based on installation type
+  unset count
   if [ "${installtype}" == "small" ]; then
-    cat > main.tf << EOL
-provider "google" {
-  project = "${PROJECT_ID}"
-  region  = "${REGION}"
-}
-
-variable "valid_zones" {
-  description = "List of zones where the machine type is available"
-  type        = list(string)
-}
-
-resource "random_shuffle" "zone_selection" {
-  input        = var.valid_zones
-  result_count = 3
-}
-
-resource "google_compute_disk" "data_disk" {
-  labels = {
-    division = "support"
-    org      = "support"
-    team     = "support"
-    project  = "${USERNAME}-ecelab"
-  }
-
-  count = 3
-  name  = "${USERNAME}-ecelab-data-disk-\${count.index + 1}"
-  type  = "pd-standard"
-  zone  = random_shuffle.zone_selection.result[count.index]
-  size  = 150
-}
-
-resource "google_compute_instance" "vm_instance" {
-  count        = 3
-  name         = "${USERNAME}-ecelab-\${count.index + 1}"
-  machine_type = "${TYPE}"
-  zone         = random_shuffle.zone_selection.result[count.index]
-
-  boot_disk {
-    initialize_params {
-      image = "${image}"
-    }
-  }
-
-  attached_disk {
-    source      = google_compute_disk.data_disk[count.index].id
-    device_name = "data-disk-\${count.index + 1}"
-  }
-
-  network_interface {
-    network = "default"
-
-    access_config {
-    }
-  }
-}
-
-output "instance_ips" {
-  value       = google_compute_instance.vm_instance[*].network_interface[0].access_config[0].nat_ip
-  description = "The external IP addresses of the instances"
-}
-EOL
+    count=3
   else
-    cat > main.tf << EOL
+    count=1
+  fi
+
+  cat > main.tf << EOL
 provider "google" {
   project = "${PROJECT_ID}"
   region  = "${REGION}"
@@ -402,7 +346,7 @@ variable "valid_zones" {
 
 resource "random_shuffle" "zone_selection" {
   input        = var.valid_zones
-  result_count = 1
+  result_count = ${count}
 }
 
 resource "google_compute_disk" "data_disk" {
@@ -413,7 +357,7 @@ resource "google_compute_disk" "data_disk" {
     project  = "${USERNAME}-ecelab"
   }
 
-  count = 1
+  count = ${count}
   name  = "${USERNAME}-ecelab-data-disk-\${count.index + 1}"
   type  = "pd-standard"
   zone  = random_shuffle.zone_selection.result[count.index]
@@ -421,7 +365,7 @@ resource "google_compute_disk" "data_disk" {
 }
 
 resource "google_compute_instance" "vm_instance" {
-  count        = 1
+  count        = ${count}
   name         = "${USERNAME}-ecelab-\${count.index + 1}"
   machine_type = "${TYPE}"
   zone         = random_shuffle.zone_selection.result[count.index]
@@ -450,7 +394,6 @@ output "instance_ips" {
   description = "The external IP addresses of the instances"
 }
 EOL
-  fi
 
   # Check if Terraform output indicates existing resources
   output=$(terraform output -json)
