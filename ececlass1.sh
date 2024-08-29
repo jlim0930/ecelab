@@ -6,8 +6,8 @@
 
 ### ORGANIZATION ###############
 
-gcp_project="elastic-support"
-gcp_region="us-central1"
+source vars
+
 machine_type="n1-standard-8"    # GCP machine type - gcloud compute machine-types list
 boot_disk_type="pd-balanced"         # disk type -  gcloud compute disk-types list
 label="division=support,org=support,team=support,project=ececlass"
@@ -36,6 +36,16 @@ ${blue}COMMANDS${reset}
 EOF
 }
 
+# Ensure PROJECT_ID is set
+check_project_id() {
+  if [ -z "${PROJECT_ID}" ]; then
+    debugr "${blue}PROJECT_ID${reset} is not set in ${blue}vars${reset}. Please edit ${blue}vars${reset} it first."
+    exit 1
+  fi
+}
+
+# Call check_project_id
+check_project_id
 
 # load image list
 load_image_list() {
