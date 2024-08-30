@@ -493,7 +493,7 @@ setup_ansible
 run_ansible_playbooks() {
   debug "Running ansible scripts"
   sleep 5
-  ansible-playbook -i inventory.yml combined.yml --extra-vars "crt=${container} ece_version=${version}"
+  ansible-playbook -i inventory.yml preinstall.yml --extra-vars "crt=${container} ece_version=${version}"
 
   if [ $? -eq 0 ]; then
     echo ""
@@ -530,4 +530,4 @@ run_ansible_playbooks() {
 #   fi
 # }
 
-# run_ansible_playbooks
+run_ansible_playbooks
