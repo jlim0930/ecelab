@@ -1,4 +1,15 @@
 PROJECT_ID="elastic-support"  # make sure to add your project name
 REGION="us-central1" # run gcloud compute regions list to see the region list
 
-# variables that you can edit to get things closer to you
+## Edit the below if you know the type and version of deployment you want and do not want to be prompted for it.
+## Please remember this bypasses generated menu's and does not check to ensure that all options are what it should be
+## only select known good options in the comments and be careful with the OS selection.  if it was not listed in the menu it will not work.
+
+## PRESELECTED_installtype: single | small
+# PRESELECTED_installtype="single"
+
+## PRESELECTED_version: 3.3.0 | 3.4.0 | 3.4.1 | 3.5.0 | 3.5.1 | 3.6.0 | 3.6.1 | 3.6.2 | 3.7.1 | 3.7.2
+# PRESELECTED_version="3.3.0"
+
+## PRESELECTED_os: Rocky 8 - Podman - x86_64 | Rocky 8 - Podman - arm64 | Rocky 8 - Docker 20.10 - x86_64 | Rocky 8 - Docker 20.10 - arm64 | Ubuntu 20.04 - Docker 20.10 - x86_64 | Ubuntu 20.04 - Docker 20.10 - arm64
+# PRESELECTED_os="Rocky 8 - Podman - x86_64"

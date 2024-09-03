@@ -1,6 +1,9 @@
 #!/bin/bash
 
 ### load vars - Please edit vars file and customize it.
+unset installtype
+unset version
+unset os
 source vars
 
 ### set username
@@ -156,103 +159,117 @@ original_columns=$COLUMNS
 COLUMNS=1
 
 # Prompt for installation type
-debug "Select the size:"
-select installtype in "single" "small"; do
-  case $installtype in
-    "single" | "small")
-      break;;
-    *)
-      debugr "Invalid option. Please select again."
-      ;;
-  esac
-done
+if [ -z $PRESELECTED_installtype ]; then
+  debug "Select the size:"
+  select installtype in "single" "small"; do
+    case $installtype in
+      "single" | "small")
+        break;;
+      *)
+        debugr "Invalid option. Please select again."
+        ;;
+    esac
+  done
+else
+  installtype="$PRESELECTED_installtype"
+fi
 
 # Prompt for ECE Version selection
-debug "Select the ECE Version:"
-select version in "3.3.0" "3.4.0" "3.4.1" "3.5.0" "3.5.1" "3.6.0" "3.6.1" "3.6.2" "3.7.1" "3.7.2"; do
-  case $version in
-    "3.3.0" | "3.4.0" | "3.4.1" | "3.5.0" | "3.5.1" | "3.6.0" | "3.6.1" | "3.6.2" | "3.7.1" | "3.7.2")
-      break;;
-    *)
-      debugr "Invalid option. Please select again."
-      ;;
-  esac
-done
+if [ -z $PRESELECTED_version ]; then
+  debug "Select the ECE Version:"
+  select version in "3.3.0" "3.4.0" "3.4.1" "3.5.0" "3.5.1" "3.6.0" "3.6.1" "3.6.2" "3.7.1" "3.7.2"; do
+    case $version in
+      "3.3.0" | "3.4.0" | "3.4.1" | "3.5.0" | "3.5.1" | "3.6.0" | "3.6.1" | "3.6.2" | "3.7.1" | "3.7.2")
+        break;;
+      *)
+        debugr "Invalid option. Please select again."
+        ;;
+    esac
+  done
+else
+  version="$PRESELECTED_version"
+fi
 
 # Determine OS and container options based on version
 # Function to select OS and set relevant variables
 select_os_and_container() {
   local os_choices=("$@")
-  debug "Select the OS for the GCP instances:"
-  select os in "${os_choices[@]}"; do
-    case $os in
-      "Rocky 8 - Podman - x86_64")
-        image="rocky-linux-cloud/rocky-linux-8-optimized-gcp"
-        container="podman"
-        DISK2="sdb"
-        TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+  local preselected_os="$PRESELECTED_os" # Environment variable to bypass the select
+
+  if [[ -n "$preselected_os" ]]; then
+    debug "Using preselected OS: $preselected_os"
+    os="$preselected_os"
+  else
+    debug "Select the OS for the GCP instances:"
+    select os in "${os_choices[@]}"; do
+      if [[ -n "$os" ]]; then
+        debug "You have selected: $os"
         break
-        ;;
-      "Rocky 8 - Podman - arm64")
-        image="rocky-linux-cloud/rocky-linux-8-optimized-gcp-arm64"
-        container="podman"
-        DISK2="nvme0n2"
-        TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
-        break
-        ;;
-      "Ubuntu 20.04 - Docker 24.0 - x86_64")
-        image="ubuntu-os-cloud/ubuntu-minimal-2004-lts"
-        container="docker"
-        dockerversion="24.0"
-        DISK2="sdb"
-        TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
-        break
-        ;;
-      "Ubuntu 20.04 - Docker 24.0 - arm64")
-        image="ubuntu-os-cloud/ubuntu-minimal-2004-lts-arm64"
-        container="docker"
-        dockerversion="24.0"
-        DISK2="nvme0n2"
-        TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
-        break
-        ;;
-      "Rocky 8 - Docker 20.10 - x86_64")
-        image="rocky-linux-cloud/rocky-linux-8-optimized-gcp"
-        container="docker"
-        dockerversion="20.10"
-        DISK2="sdb"
-        TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
-        break
-        ;;
-      "Rocky 8 - Docker 20.10 - arm64")
-        image="rocky-linux-cloud/rocky-linux-8-optimized-gcp-arm64"
-        container="docker"
-        dockerversion="20.10"
-        DISK2="nvme0n2"
-        TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
-        break
-        ;;
-      "Ubuntu 20.04 - Docker 20.10 - x86_64")
-        image="ubuntu-os-cloud/ubuntu-minimal-2004-lts"
-        container="docker"
-        dockerversion="20.10"
-        DISK2="sdb"
-        TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
-        break
-        ;;
-      "Ubuntu 20.04 - Docker 20.10 - arm64")
-        image="ubuntu-os-cloud/ubuntu-minimal-2004-lts-arm64"
-        container="docker"
-        dockerversion="20.10"
-        DISK2="nvme0n2"
-        TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
-        break
-        ;;
-      *)
+      else
         debugr "Invalid option. Please try again."
-        ;;
-    esac
-  done
+      fi
+    done
+  fi
+  
+  case $os in
+    "Rocky 8 - Podman - x86_64")
+      image="rocky-linux-cloud/rocky-linux-8-optimized-gcp"
+      container="podman"
+      DISK2="sdb"
+      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      ;;
+    "Rocky 8 - Podman - arm64")
+      image="rocky-linux-cloud/rocky-linux-8-optimized-gcp-arm64"
+      container="podman"
+      DISK2="nvme0n2"
+      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      ;;
+    "Ubuntu 20.04 - Docker 24.0 - x86_64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2004-lts"
+      container="docker"
+      dockerversion="24.0"
+      DISK2="sdb"
+      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      ;;
+    "Ubuntu 20.04 - Docker 24.0 - arm64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2004-lts-arm64"
+      container="docker"
+      dockerversion="24.0"
+      DISK2="nvme0n2"
+      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      ;;
+    "Rocky 8 - Docker 20.10 - x86_64")
+      image="rocky-linux-cloud/rocky-linux-8-optimized-gcp"
+      container="docker"
+      dockerversion="20.10"
+      DISK2="sdb"
+      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      ;;
+    "Rocky 8 - Docker 20.10 - arm64")
+      image="rocky-linux-cloud/rocky-linux-8-optimized-gcp-arm64"
+      container="docker"
+      dockerversion="20.10"
+      DISK2="nvme0n2"
+      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      ;;
+    "Ubuntu 20.04 - Docker 20.10 - x86_64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2004-lts"
+      container="docker"
+      dockerversion="20.10"
+      DISK2="sdb"
+      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      ;;
+    "Ubuntu 20.04 - Docker 20.10 - arm64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2004-lts-arm64"
+      container="docker"
+      dockerversion="20.10"
+      DISK2="nvme0n2"
+      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      ;;
+    *)
+      debugr "Invalid option. Please try again."
+      ;;
+  esac
 }
 
 if [ $(checkversion $version) -ge $(checkversion "3.7.0") ]; then
