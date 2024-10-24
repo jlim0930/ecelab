@@ -177,9 +177,9 @@ fi
 # Prompt for ECE Version selection
 if [ -z $PRESELECTED_version ]; then
   debug "Select the ECE Version:"
-  select version in "3.3.0" "3.4.0" "3.4.1" "3.5.0" "3.5.1" "3.6.0" "3.6.1" "3.6.2" "3.7.1" "3.7.2"; do
+  select version in "3.3.0" "3.4.0" "3.4.1" "3.5.0" "3.5.1" "3.6.0" "3.6.1" "3.6.2" "3.7.1" "3.7.2" "3.7.3"; do
     case $version in
-      "3.3.0" | "3.4.0" | "3.4.1" | "3.5.0" | "3.5.1" | "3.6.0" | "3.6.1" | "3.6.2" | "3.7.1" | "3.7.2")
+      "3.3.0" | "3.4.0" | "3.4.1" | "3.5.0" | "3.5.1" | "3.6.0" | "3.6.1" | "3.6.2" | "3.7.1" | "3.7.2" | "3.7.3")
         break;;
       *)
         debugr "Invalid option. Please select again."
