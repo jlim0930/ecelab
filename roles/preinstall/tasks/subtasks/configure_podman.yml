@@ -73,12 +73,35 @@
     - systemd_reload is failed
     - systemd_reload.rc is defined and systemd_reload.rc != 0
 
-- name: Ensure podman daemon is enabled and reload systemd daemon
+- name: Ensure Podman daemon is enabled and started, reload systemd if needed
   systemd:
     name: podman
     enabled: yes
     state: started
-  register: podman_service_enabled
+    daemon_reload: yes
+  register: podman_service_status
   failed_when:
-    - podman_service_enabled is failed
-    - podman_service_enabled.rc is defined and podman_service_enabled.rc != 0
+    - podman_service_status is failed
+    - podman_service_status.rc is defined and podman_service_status.rc != 0
+
+- name: Ensure Podman restart service is enabled and started
+  systemd:
+    name: podman-restart.service
+    enabled: yes
+    state: started
+    daemon_reload: yes
+  register: podman_restart_service_status
+  failed_when:
+    - podman_restart_service_status is failed
+    - podman_restart_service_status.rc is defined and podman_restart_service_status.rc != 0
+
+- name: Ensure Podman socket is enabled and started
+  systemd:
+    name: podman.socket
+    enabled: yes
+    state: started
+    daemon_reload: yes
+  register: podman_socket_status
+  failed_when:
+    - podman_socket_status is failed
+    - podman_socket_status.rc is defined and podman_socket_status.rc != 0
