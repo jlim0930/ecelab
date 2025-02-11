@@ -1,5 +1,6 @@
 PROJECT_ID="elastic-support"  # make sure to add your project name
 REGION="us-central1" # run gcloud compute regions list to see the region list
+                     # due to vpc changes only use us-central1 or us-east1 for now
 
 ## Edit the below if you know the type and version of deployment you want and do not want to be prompted for it.
 ## Please remember this bypasses generated menu's and does not check to ensure that all options are what it should be
