@@ -10,6 +10,7 @@
     --runner-id {{ ece_runner_id }} 
     --host-storage-path {{ data_dir }}/elastic 
     {{ "--podman" if crt == "podman" else "" }}
+    {{ "--selinux" if selinuxmode == "selinux" else "" }}
     {{ extra_installer_args }}
   become: yes
   become_method: sudo

@@ -6,5 +6,9 @@
 - set_fact:
     adminconsole_root_password: "{{ hostvars[groups['primary'][0]].adminconsole_root_password }}"
   when: adminconsole_root_password is undefined
+  
+- set_fact:
+    primary_int_address: "{{ hostvars[groups['primary'][0]].ansible_default_ipv4.address }}"
+  when: primary_int_address is undefined
 
 - include_tasks: install_stack.yml

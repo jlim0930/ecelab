@@ -21,7 +21,7 @@
 
 - name: Execute installation
   shell: /home/elastic/elastic-cloud-enterprise.sh
-    --coordinator-host {{ primary_hostname }}
+    --coordinator-host {{ primary_int_address }}
     --roles-token '{{ roles_token.json.token }}'
     --roles '{{ ece_roles | join(',') }}'
     --availability-zone {{ availability_zone }}
@@ -33,6 +33,7 @@
     --runner-id {{ ece_runner_id }}{% if capacity is defined %}
     --capacity {{ capacity }}{% endif %}
     {{ "--podman" if crt == "podman" else "" }}
+    {{ "--selinux" if selinuxmode == "selinux" else "" }}
     {{ extra_installer_args }}
   become: yes
   become_method: sudo

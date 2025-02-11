@@ -33,6 +33,7 @@
       - iptables
       - dnf-plugins-core
       - python3-dnf-plugin-versionlock
+      - containernetworking-plugins
     state: present
     update_cache: yes
   register: install_dependencies

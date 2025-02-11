@@ -1,0 +1,41 @@
+---
+# - name: Remove Podman packages
+#   package:
+#     name: "{{ item }}"
+#     state: absent
+#   vars:
+#     packages:
+#     - podman
+#     - podman-remote
+#   with_items: "{{ packages }}"
+#   register: remove_packages
+#   retries: 10
+#   delay: 30
+#   until: remove_packages is succeeded
+#   ignore_errors: yes
+#   failed_when:
+#     - remove_packages is failed
+#     - remove_packages.results | selectattr('rc', 'defined') | map(attribute='rc') | select('ne', 0) | list | length > 0
+
+- name: Install base dependencies
+  yum:
+    name: 
+      - policycoreutils-python-utils
+    state: present
+    update_cache: yes
+
+- name: Install podman
+  package:
+    name: "{{ podman_version_map[podman_version]['package'] }}"
+    state: present
+
+- name: Lock Podman package versions with dnf_versionlock
+  community.general.dnf_versionlock:
+    name:
+      - podman-4.*
+      - podman-remote-4.*
+    state: present
+  register: lock_podman_versions
+  failed_when:
+    - lock_podman_versions is failed
+    - lock_podman_versions.rc is defined and lock_podman_versions.rc != 0
