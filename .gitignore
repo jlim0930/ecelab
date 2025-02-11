@@ -1,0 +1,8 @@
+ecelab.log
+bootstrap-secrets.local.json
+ecelab/
+inventory.yml
+main.tf
+terraform.*
+.terraform/
+.terraform*
