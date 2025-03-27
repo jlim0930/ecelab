@@ -323,8 +323,8 @@ select_os_and_container() {
 }
 
 if [ $(checkversion $version) -ge $(checkversion "3.7.0") ]; then
-  # select_os_and_container "Rocky 8 - Podman - x86_64" "Rocky 8 - Podman - x86_64 - selinux" "Rocky 8 - Podman - arm64" "Rocky 8 - Podman - arm64 - selinux" "Rocky 9 - Podman - x86_64" "Rocky 9 - Podman - x86_64 - selinux" "Rocky 9 - Podman - arm64" "Rocky 9 - Podman - arm64 - selinux" "Ubuntu 20.04 - Docker 24.0 - x86_64" "Ubuntu 20.04 - Docker 24.0 - arm64"
-  select_os_and_container "Rocky 8 - Podman - x86_64" "Rocky 8 - Podman - x86_64 - selinux" "Rocky 8 - Podman - arm64" "Rocky 8 - Podman - arm64 - selinux" "Ubuntu 20.04 - Docker 24.0 - x86_64" "Ubuntu 20.04 - Docker 24.0 - arm64"
+  select_os_and_container "Rocky 8 - Podman - x86_64" "Rocky 8 - Podman - x86_64 - selinux" "Rocky 8 - Podman - arm64" "Rocky 8 - Podman - arm64 - selinux" "Rocky 9 - Podman - x86_64" "Rocky 9 - Podman - x86_64 - selinux" "Rocky 9 - Podman - arm64" "Rocky 9 - Podman - arm64 - selinux" "Ubuntu 20.04 - Docker 24.0 - x86_64" "Ubuntu 20.04 - Docker 24.0 - arm64"
+  # select_os_and_container "Rocky 8 - Podman - x86_64" "Rocky 8 - Podman - x86_64 - selinux" "Rocky 8 - Podman - arm64" "Rocky 8 - Podman - arm64 - selinux" "Ubuntu 20.04 - Docker 24.0 - x86_64" "Ubuntu 20.04 - Docker 24.0 - arm64"
 else
   select_os_and_container "Rocky 8 - Podman - x86_64" "Rocky 8 - Podman - arm64" "Rocky 8 - Docker 20.10 - x86_64" "Rocky 8 - Docker 20.10 - arm64" "Ubuntu 20.04 - Docker 20.10 - x86_64" "Ubuntu 20.04 - Docker 20.10 - arm64"
 fi
