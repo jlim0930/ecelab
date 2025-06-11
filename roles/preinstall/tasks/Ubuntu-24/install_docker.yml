@@ -1,0 +1,31 @@
+---
+- name: Add docker repository key
+  apt_key:
+    url: "{{ docker_version_map[docker_version]['keys']['server'] }}"
+    id: "{{ docker_version_map[docker_version]['keys']['id'] }}"
+
+- name: Add docker repository
+  apt_repository:
+    repo: "{{ docker_version_map[docker_version]['repo'] }}"
+    state: present
+
+- name: Install docker
+  apt:
+    name: "{{ docker_version_map[docker_version]['package'] }}"
+    update_cache: yes
+    state: present
+
+- name: Pin docker-ce package | pre - base - Ubuntu-24 - install_docker
+  ansible.builtin.dpkg_selections:
+    name: docker-ce
+    selection: hold
+
+- name: Pin docker-ce-cli package | pre - base - Ubuntu-24 - install_docker
+  ansible.builtin.dpkg_selections:
+    name: docker-ce-cli
+    selection: hold
+
+- name: Pin containerd.io package | pre - base - Ubuntu-24 - install_docker
+  ansible.builtin.dpkg_selections:
+    name: containerd.io
+    selection: hold

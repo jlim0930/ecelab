@@ -6,6 +6,21 @@
   register: data_dir_exists
   failed_when: data_dir_exists is failed
 
+- name: Gather hardware facts
+  ansible.builtin.setup:
+    gather_subset:
+      - hardware
+
+- name: Find non-os empty disk
+  set_fact:
+    device_name: "{{ item.key }}"
+  when: >
+    item.value.partitions | length == 0 and
+    item.key is match('^sd[a-z]$')
+  loop: "{{ ansible_facts.devices | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
 - name: Create the LVM volume group
   lvg:
     vg: lxc

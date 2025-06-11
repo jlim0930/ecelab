@@ -32,3 +32,24 @@ podman_version_map:
     package:
       - podman-4.*
       - podman-remote-4.*
+  "5":
+    name: 'podman'
+    package:
+      - podman-5.2.2-13.*
+      - podman-remote-5.2.2-13.*
+
+
+
+#podman_version_map:
+#  "4":
+#    name: 'podman'
+#    package:
+#      - podman-4.*  
+#      - podman-remote-4.*
+#  "5":
+#    name: 'podman'
+#    package:
+#      - podman-5.2.2-13.*
+#      - podman-remote-5.2.2-13.*
+
+      

@@ -24,6 +24,54 @@
     state: present
     update_cache: yes
 
+
+#- name: Install podman
+#  package:
+#    name: "{{ podman_version_map[podman_version]['package'] }}"
+#    state: present
+
+#- name: Lock Podman package versions with dnf_versionlock
+#  community.general.dnf_versionlock:
+#    name:
+#      - podman-4.*
+#      - podman-remote-4.*
+#    state: present
+#  register: lock_podman_versions
+#  failed_when:
+#    - lock_podman_versions is failed
+#    - lock_podman_versions.rc is defined and lock_podman_versions.rc != 0
+
+#- name: Set Podman version key based on ECE version
+#  set_fact:
+#    podman_version_key: "{{ '4' if ece_version is version('3.8', '<') else '5' }}"
+
+#- name: Define Podman version map
+#  set_fact:
+#    podman_version_map:
+#      "4":
+#        package:
+#          - podman-4.*
+#          - podman-remote-4.*
+#      "5":
+#        package:
+#          - podman-5.*
+#          - podman-remote-5.*
+
+
+#- name: Install Podman
+#  package:
+#    name: "{{ podman_version_map[podman_version_key]['package'] }}"
+#    state: present
+
+#- name: Lock Podman package versions with dnf_versionlock
+#  community.general.dnf_versionlock:
+#    name: "{{ podman_version_map[podman_version_key]['package'] }}"
+#    state: present
+#  register: lock_podman_versions
+#  failed_when:
+#    - lock_podman_versions is failed
+#    - lock_podman_versions.rc is defined and lock_podman_versions.rc != 0
+
 - name: Install podman
   package:
     name: "{{ podman_version_map[podman_version]['package'] }}"
@@ -31,11 +79,28 @@
 
 - name: Lock Podman package versions with dnf_versionlock
   community.general.dnf_versionlock:
-    name:
-      - podman-4.*
-      - podman-remote-4.*
+    name: "{{ podman_version_map[podman_version]['package'] }}"
     state: present
   register: lock_podman_versions
   failed_when:
     - lock_podman_versions is failed
     - lock_podman_versions.rc is defined and lock_podman_versions.rc != 0
+    
+# - name: Lock Podman package versions with dnf_versionlock
+#   community.general.dnf_versionlock:
+#     name:
+#       - podman-5.2.2-13.*
+#       - podman-remote-5.2.2-13.*
+#     state: present
+#   register: lock_podman_versions
+#   failed_when:
+#     - lock_podman_versions is failed
+#     - lock_podman_versions.rc is defined and lock_podman_versions.rc != 0
+
+- name: Ensure network_backend is set to "cni" in containers.conf
+  ansible.builtin.ini_file:
+    path: /etc/containers/containers.conf
+    section: network
+    option: network_backend
+    value: '"cni"'
+    no_extra_spaces: true
