@@ -621,14 +621,14 @@ EOL
   output=$(terraform output -json)
   if echo "${output}" | grep -q '"instance_ips"'; then
     debugr "Previous instances found in Terraform output. Proceeding to destroy existing resources..."
-    # terraform destroy -auto-approve &>/dev/null
+    # terraform destroy -auto-approve >/dev/null
     debugr "Please remove the previous install by running ${blue}terraform destroy -auto-approve${reset}"
     exit 1
   fi
 
   # Initialize Terraform
   debug "Initializing Terraform..."
-  terraform init &>/dev/null
+  terraform init >/dev/null
   if [ $? -ne 0 ]; then
     debugr "Terraform initialization failed. Exiting."
     exit 1
