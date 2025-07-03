@@ -1,6 +1,9 @@
 #!/bin/bash
 
 ### load vars - Please edit vars file and customize it.
+unset installtype
+unset version
+unset os
 source vars
 
 ### set username
@@ -156,109 +159,368 @@ original_columns=$COLUMNS
 COLUMNS=1
 
 # Prompt for installation type
-debug "Select the size:"
-select installtype in "single" "small"; do
-  case $installtype in
-    "single" | "small")
-      break;;
-    *)
-      debugr "Invalid option. Please select again."
-      ;;
-  esac
-done
+if [ -z $PRESELECTED_installtype ]; then
+  debug "Select the size:"
+  select installtype in "single" "small"; do
+    case $installtype in
+      "single" | "small")
+        break;;
+      *)
+        debugr "Invalid option. Please select again."
+        ;;
+    esac
+  done
+else
+  installtype="$PRESELECTED_installtype"
+fi
 
 # Prompt for ECE Version selection
-debug "Select the ECE Version:"
-select version in "3.3.0" "3.4.0" "3.4.1" "3.5.0" "3.5.1" "3.6.0" "3.6.1" "3.6.2" "3.7.1" "3.7.2" "3.7.3"; do
-  case $version in
-    "3.3.0" | "3.4.0" | "3.4.1" | "3.5.0" | "3.5.1" | "3.6.0" | "3.6.1" | "3.6.2" | "3.7.1" | "3.7.2" | "3.7.3")
-      break;;
-    *)
-      debugr "Invalid option. Please select again."
-      ;;
-  esac
-done
+if [ -z $PRESELECTED_version ]; then
+  debug "Select the ECE Version:"
+  select version in "3.3.0" "3.4.0" "3.4.1" "3.5.0" "3.5.1" "3.6.0" "3.6.1" "3.6.2" "3.7.1" "3.7.2" "3.7.3" "3.8.0" "3.8.1" "4.0.0" "4.0.1"; do
+    case $version in
+      "3.3.0" | "3.4.0" | "3.4.1" | "3.5.0" | "3.5.1" | "3.6.0" | "3.6.1" | "3.6.2" | "3.7.1" | "3.7.2" | "3.7.3" | "3.8.0" | "3.8.1" | "4.0.0" | "4.0.1")
+        break;;
+      *)
+        debugr "Invalid option. Please select again."
+        ;;
+    esac
+  done
+else
+  version="$PRESELECTED_version"
+fi
 
 # Determine OS and container options based on version
 # Function to select OS and set relevant variables
 select_os_and_container() {
   local os_choices=("$@")
-  debug "Select the OS for the GCP instances:"
-  select os in "${os_choices[@]}"; do
-    case $os in
-      "Rocky 8 - Podman - x86_64")
-        image="rocky-linux-cloud/rocky-linux-8-optimized-gcp"
-        container="podman"
-        DISK2="sdb"
-        TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+  local preselected_os="$PRESELECTED_os" # Environment variable to bypass the select
+
+  if [[ -n "$preselected_os" ]]; then
+    debug "Using preselected OS: $preselected_os"
+    os="$preselected_os"
+  else
+    debug "Select the OS for the GCP instances:"
+    select os in "${os_choices[@]}"; do
+      if [[ -n "$os" ]]; then
+        debug "You have selected: $os"
         break
-        ;;
-      "Rocky 8 - Podman - arm64")
-        image="rocky-linux-cloud/rocky-linux-8-optimized-gcp-arm64"
-        container="podman"
-        DISK2="nvme0n2"
-        TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
-        break
-        ;;
-      "Ubuntu 20.04 - Docker 24.0 - x86_64")
-        image="ubuntu-os-cloud/ubuntu-minimal-2004-lts"
-        container="docker"
-        dockerversion="24.0"
-        DISK2="sdb"
-        TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
-        break
-        ;;
-      "Ubuntu 20.04 - Docker 24.0 - arm64")
-        image="ubuntu-os-cloud/ubuntu-minimal-2004-lts-arm64"
-        container="docker"
-        dockerversion="24.0"
-        DISK2="nvme0n2"
-        TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
-        break
-        ;;
-      "Rocky 8 - Docker 20.10 - x86_64")
-        image="rocky-linux-cloud/rocky-linux-8-optimized-gcp"
-        container="docker"
-        dockerversion="20.10"
-        DISK2="sdb"
-        TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
-        break
-        ;;
-      "Rocky 8 - Docker 20.10 - arm64")
-        image="rocky-linux-cloud/rocky-linux-8-optimized-gcp-arm64"
-        container="docker"
-        dockerversion="20.10"
-        DISK2="nvme0n2"
-        TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
-        break
-        ;;
-      "Ubuntu 20.04 - Docker 20.10 - x86_64")
-        image="ubuntu-os-cloud/ubuntu-minimal-2004-lts"
-        container="docker"
-        dockerversion="20.10"
-        DISK2="sdb"
-        TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
-        break
-        ;;
-      "Ubuntu 20.04 - Docker 20.10 - arm64")
-        image="ubuntu-os-cloud/ubuntu-minimal-2004-lts-arm64"
-        container="docker"
-        dockerversion="20.10"
-        DISK2="nvme0n2"
-        TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
-        break
-        ;;
-      *)
+      else
         debugr "Invalid option. Please try again."
-        ;;
-    esac
-  done
+      fi
+    done
+  fi
+
+  case $os in
+    "Rocky 8 - Podman - x86_64")
+      image="rocky-linux-cloud/rocky-linux-8-optimized-gcp"
+      container="podman"
+      cversion="4"
+      DISK2="sdb"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      ;;
+    "Rocky 8 - Podman - x86_64 - selinux")
+      image="rocky-linux-cloud/rocky-linux-8-optimized-gcp"
+      container="podman"
+      cversion="4"
+      DISK2="sdb"
+      SELINUX="selinux"
+      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      ;;
+    "Rocky 8 - Podman - arm64")
+      image="rocky-linux-cloud/rocky-linux-8-optimized-gcp-arm64"
+      container="podman"
+      cversion="4"
+      DISK2="nvme0n2"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      ;;
+    "Rocky 8 - Podman - arm64 - selinux")
+      image="rocky-linux-cloud/rocky-linux-8-optimized-gcp-arm64"
+      container="podman"
+      cversion="5"
+      DISK2="nvme0n2"
+      SELINUX="selinux"
+      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      ;;
+    "Rocky 9 - Podman - x86_64")
+      image="rocky-linux-cloud/rocky-linux-9-optimized-gcp"
+      container="podman"
+      cversion="5"
+      DISK2="sdb"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      ;;
+    "Rocky 9 - Podman - x86_64 - selinux")
+      image="rocky-linux-cloud/rocky-linux-9-optimized-gcp"
+      container="podman"
+      cversion="5"
+      DISK2="sdb"
+      SELINUX="selinux"
+      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      ;;
+    "Rocky 9 - Podman - arm64")
+      image="rocky-linux-cloud/rocky-linux-9-optimized-gcp-arm64"
+      container="podman"
+      cversion="5"
+      DISK2="nvme0n2"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      ;;
+    "Rocky 9 - Podman - arm64 - selinux")
+      image="rocky-linux-cloud/rocky-linux-9-optimized-gcp-arm64"
+      container="podman"
+      cversion="5"
+      DISK2="nvme0n2"
+      SELINUX="selinux"
+      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      ;;
+    "Ubuntu 20.04 - Docker 24.0 - x86_64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2004-lts"
+      container="docker"
+      cversion="24.0"
+      DISK2="sdb"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      ;;
+    "Ubuntu 20.04 - Docker 24.0 - arm64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2004-lts-arm64"
+      container="docker"
+      cversion="24.0"
+      DISK2="nvme0n2"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      ;;
+    "Rocky 8 - Docker 20.10 - x86_64")
+      image="rocky-linux-cloud/rocky-linux-8-optimized-gcp"
+      container="docker"
+      cversion="20.10"
+      DISK2="sdb"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      ;;
+    "Rocky 8 - Docker 20.10 - arm64")
+      image="rocky-linux-cloud/rocky-linux-8-optimized-gcp-arm64"
+      container="docker"
+      cversion="20.10"
+      DISK2="nvme0n2"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      ;;
+    "Ubuntu 20.04 - Docker 20.10 - x86_64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2004-lts"
+      container="docker"
+      cversion="20.10"
+      DISK2="sdb"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      ;;
+    "Ubuntu 20.04 - Docker 20.10 - arm64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2004-lts-arm64"
+      container="docker"
+      cversion="20.10"
+      DISK2="nvme0n2"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      ;;
+    "Ubuntu 20.04 - Docker 24.0 - x86_64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2004-lts"
+      container="docker"
+      cversion="24.0"
+      DISK2="sdb"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      ;;
+    "Ubuntu 20.04 - Docker 24.0 - arm64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2004-lts-arm64"
+      container="docker"
+      cversion="24.0"
+      DISK2="nvme0n2"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      ;;
+    "Ubuntu 20.04 - Docker 25.0 - x86_64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2004-lts"
+      container="docker"
+      cversion="25.0"
+      DISK2="sdb"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      ;;
+    "Ubuntu 20.04 - Docker 25.0 - arm64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2004-lts-arm64"
+      container="docker"
+      cversion="25.0"
+      DISK2="nvme0n2"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      ;;
+    "Ubuntu 20.04 - Docker 26.0 - x86_64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2004-lts"
+      container="docker"
+      cversion="26.0"
+      DISK2="sdb"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      ;;
+    "Ubuntu 20.04 - Docker 26.0 - arm64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2004-lts-arm64"
+      container="docker"
+      cversion="26.0"
+      DISK2="nvme0n2"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      ;;
+    "Ubuntu 20.04 - Docker 27.0 - x86_64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2004-lts"
+      container="docker"
+      cversion="27.0"
+      DISK2="sdb"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      ;;
+    "Ubuntu 20.04 - Docker 27.0 - arm64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2004-lts-arm64"
+      container="docker"
+      cversion="27.0"
+      DISK2="nvme0n2"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      ;;
+    "Ubuntu 22.04 - Docker 24.0 - x86_64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2204-lts"
+      container="docker"
+      cversion="24.0"
+      DISK2="sdb"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      ;;
+    "Ubuntu 22.04 - Docker 24.0 - arm64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2204-lts-arm64"
+      container="docker"
+      cversion="24.0"
+      DISK2="nvme0n2"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      ;;
+    "Ubuntu 22.04 - Docker 25.0 - x86_64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2204-lts"
+      container="docker"
+      cversion="25.0"
+      DISK2="sdb"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      ;;
+    "Ubuntu 22.04 - Docker 25.0 - arm64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2204-lts-arm64"
+      container="docker"
+      cversion="25.0"
+      DISK2="nvme0n2"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      ;;
+    "Ubuntu 22.04 - Docker 26.0 - x86_64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2204-lts"
+      container="docker"
+      cversion="26.0"
+      DISK2="sdb"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      ;;
+    "Ubuntu 22.04 - Docker 26.0 - arm64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2204-lts-arm64"
+      container="docker"
+      cversion="26.0"
+      DISK2="nvme0n2"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      ;;
+    "Ubuntu 22.04 - Docker 27.0 - x86_64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2204-lts"
+      container="docker"
+      cversion="27.0"
+      DISK2="sdb"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      ;;
+    "Ubuntu 22.04 - Docker 27.0 - arm64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2204-lts-arm64"
+      container="docker"
+      cversion="27.0"
+      DISK2="nvme0n2"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      ;;
+    "Ubuntu 24.04 - Docker 26.0 - x86_64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2404-lts"
+      container="docker"
+      cversion="26.0"
+      DISK2="sdb"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      ;;
+    "Ubuntu 24.04 - Docker 26.0 - arm64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2404-lts-arm64"
+      container="docker"
+      cversion="26.0"
+      DISK2="nvme0n2"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      ;;
+    "Ubuntu 24.04 - Docker 27.0 - x86_64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2404-lts"
+      container="docker"
+      cversion="27.0"
+      DISK2="sdb"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      ;;
+    "Ubuntu 24.04 - Docker 27.0 - arm64")
+      image="ubuntu-os-cloud/ubuntu-minimal-2404-lts-arm64"
+      container="docker"
+      cversion="27.0"
+      DISK2="nvme0n2"
+      SELINUX="none"
+      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      ;;
+    *)
+      debugr "Invalid option. Please try again."
+      ;;
+  esac
 }
 
-if [ $(checkversion $version) -ge $(checkversion "3.7.0") ]; then
-  select_os_and_container "Rocky 8 - Podman - x86_64" "Rocky 8 - Podman - arm64" "Ubuntu 20.04 - Docker 24.0 - x86_64" "Ubuntu 20.04 - Docker 24.0 - arm64"
+if [ $(checkversion $version) -ge $(checkversion "4.0.0") ]; then
+  echo ""
+  echo "${red}[DEBUG]${reset} Due to GCP image policy where it refresh all the OS to the latest without the feature of using previous minor releases we are unable to install podman-4.x or podman-5.2.x but only the latest, hence support for EL9 was removed for 3.7+ installs."
+  echo "${red}[DEBUG]${reset} Also due to GCP image policy Ubuntu 20.04 is not available any longer"
+    echo ""
+
+  select_os_and_container "Rocky 8 - Podman - x86_64" "Rocky 8 - Podman - x86_64 - selinux" "Rocky 8 - Podman - arm64" "Rocky 8 - Podman - arm64 - selinux" "Ubuntu 22.04 - Docker 25.0 - x86_64" "Ubuntu 22.04 - Docker 25.0 - arm64" "Ubuntu 22.04 - Docker 26.0 - x86_64" "Ubuntu 22.04 - Docker 26.0 - arm64" "Ubuntu 22.04 - Docker 27.0 - x86_64" "Ubuntu 22.04 - Docker 27.0 - arm64" "Ubuntu 24.04 - Docker 26.0 - x86_64" "Ubuntu 24.04 - Docker 26.0 - arm64" "Ubuntu 24.04 - Docker 27.0 - x86_64" "Ubuntu 24.04 - Docker 27.0 - arm64"
+
+elif [ $(checkversion $version) -ge $(checkversion "3.8.0") ]; then
+  echo ""
+  echo "${red}[DEBUG]${reset} Due to GCP image policy where it refresh all the OS to the latest without the feature of using previous minor releases we are unable to install podman-4.x or podman-5.2.x but only the latest, hence support for EL9 was removed for 3.7+ installs."
+  echo "${red}[DEBUG]${reset} Also due to GCP image policy Ubuntu 20.04 is not available any longer"
+  echo ""
+
+  select_os_and_container "Rocky 8 - Podman - x86_64" "Rocky 8 - Podman - x86_64 - selinux" "Rocky 8 - Podman - arm64" "Rocky 8 - Podman - arm64 - selinux" "Ubuntu 22.04 - Docker 24.0 - x86_64" "Ubuntu 22.04 - Docker 24.0 - arm64" "Ubuntu 22.04 - Docker 25.0 - x86_64" "Ubuntu 22.04 - Docker 25.0 - arm64"
+
+elif [ $(checkversion $version) -ge $(checkversion "3.7.0") ]; then
+  echo ""
+  echo "${red}[DEBUG]${reset} Due to GCP image policy where it refresh all the OS to the latest without the feature of using previous minor releases we are unable to install podman-4.x or podman-5.2.x but only the latest, hence support for EL9 was removed for 3.7+ installs."
+  echo "${red}[DEBUG]${reset} Also due to GCP image policy Ubuntu 20.04 is not available any longer"
+  echo ""
+
+  select_os_and_container "Rocky 8 - Podman - x86_64" "Rocky 8 - Podman - x86_64 - selinux" "Rocky 8 - Podman - arm64" "Rocky 8 - Podman - arm64 - selinux" "Ubuntu 22.04 - Docker 24.0 - x86_64" "Ubuntu 22.04 - Docker 24.0 - arm64"
+
 else
-  select_os_and_container "Rocky 8 - Podman - x86_64" "Rocky 8 - Podman - arm64" "Rocky 8 - Docker 20.10 - x86_64" "Rocky 8 - Docker 20.10 - arm64" "Ubuntu 20.04 - Docker 20.10 - x86_64" "Ubuntu 20.04 - Docker 20.10 - arm64"
+  echo ""
+  echo "${red}[DEBUG]${reset} Due to GCP image policy where it refresh all the OS to the latest without the feature of using previous minor releases we are unable to install podman-4.x or podman-5.2.x but only the latest, hence support for EL9 was removed for 3.7+ installs."
+  echo "${red}[DEBUG]${reset} Also due to GCP image policy Ubuntu 20.04 is not available any longer"
+  echo ""
+
+  select_os_and_container "Rocky 8 - Podman - x86_64" "Rocky 8 - Podman - arm64" "Rocky 8 - Docker 20.10 - x86_64" "Rocky 8 - Docker 20.10 - arm64"
 fi
 
 # Restore the original COLUMNS value
@@ -350,7 +612,7 @@ resource "google_compute_instance" "vm_instance" {
   }
 
   network_interface {
-    network = "default"
+    subnetwork  = "projects/elastic-support/regions/us-central1/subnetworks/support-lab-vpc-us-sub1"
 
     access_config {
     }
