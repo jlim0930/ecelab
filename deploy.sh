@@ -15,6 +15,30 @@ green=$(tput setaf 2)
 blue=$(tput setaf 14)
 reset=$(tput sgr0)
 
+### debug mode
+DEBUG=0
+
+# Check for --debug flag
+for arg in "$@"; do
+  if [[ "$arg" == "--debug" ]]; then
+    DEBUG=1
+  fi
+done
+
+# Enable shell tracing in debug mode
+if [[ $DEBUG -eq 1 ]]; then
+  set -x
+fi
+
+# Function to run commands with optional stderr suppression
+run_cmd() {
+  if [[ $DEBUG -eq 1 ]]; then
+    "$@"
+  else
+    "$@" 2>/dev/null
+  fi
+}
+
 # Helper function to display debug messages
 debug() {
   echo "${green}[DEBUG]${reset} $1"
@@ -147,10 +171,10 @@ checkversion() {
 ### Setup venv for ansible 9.8.0
 
 debug "Configuring python venv and setting up ansible 9.8.0 - higher ansible versions have issues with EL8"
-$PYTHON_BIN -m venv ecelab &>/dev/null
-source ecelab/bin/activate &>/dev/null
-$PIP_BIN install --upgrade pip &>/dev/null
-$PIP_BIN install ansible==9.8.0 &>/dev/null
+run_cmd $PYTHON_BIN -m venv ecelab &>/dev/null
+run_cmd source ecelab/bin/activate &>/dev/null
+run_cmd $PIP_BIN install --upgrade pip &>/dev/null
+run_cmd $PIP_BIN install ansible==9.8.0 &>/dev/null
 
 ### Prompts for selections
 
@@ -636,7 +660,7 @@ EOL
 
   # Initialize Terraform
   debug "Initializing Terraform..."
-  terraform init &>/dev/null
+  run_cmd terraform init >/dev/null
   if [ $? -ne 0 ]; then
     debugr "Terraform initialization failed. Exiting."
     exit 1
@@ -644,7 +668,7 @@ EOL
 
   # Apply Terraform configuration
   debug "Applying Terraform configuration..."
-  terraform apply -auto-approve &>/dev/null
+  run_cmd terraform apply -auto-approve >/dev/null
   if [ $? -ne 0 ]; then
     debugr "Terraform apply failed. Exiting."
     exit 1
@@ -719,7 +743,7 @@ EOL
     for ((i=1; i<=retries; i++)); do
       # Check SSH connection on port 22
       #if echo "" > /dev/tcp/$ip/22 2>/dev/null; then
-      echo "" > /dev/tcp/$ip/22 2>/dev/null
+      run_cmd echo "" > /dev/tcp/$ip/22
       if [[ $? -eq 0 ]]; then
         debug "${blue}${ip}${reset} is reachable via SSH."
         return 0
