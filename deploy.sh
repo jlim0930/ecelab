@@ -619,6 +619,13 @@ resource "google_compute_disk" "data_disk" {
 }
 
 resource "google_compute_instance" "vm_instance" {
+  labels = {
+    division = "support"
+    org      = "support"
+    team     = "support"
+    project  = "${USERNAME}-ecelab"
+  }
+  
   count        = ${count}
   name         = "${USERNAME}-ecelab-\${count.index + 1}"
   machine_type = "${TYPE}"
