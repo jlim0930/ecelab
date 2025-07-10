@@ -50,12 +50,12 @@ debugr() {
 
 # find
 find_instances() {
-  instance_count=$(gcloud compute instances list --project "${PROJECT_ID}" --filter="name:${USERNAME}" --format="value(name)" | wc -l)
+  instance_count=$(gcloud compute instances list --project "${PROJECT_ID}" --filter="name:${USERNAME}-ecelab" --format="value(name)" | wc -l)
   if [ "$instance_count" -gt 0 ]; then
     echo ""
-    gcloud compute instances list --project "${PROJECT_ID}" --filter="name:${USERNAME}" --format="table[box](name:sort=1, zone.basename(), machineType.basename():label=\"MACHINE TYPE\", networkInterfaces[0].networkIP:label=\"INTERNAL IP\", networkInterfaces[0].accessConfigs[0].natIP:label=\"PUBLIC IP\", disks[0].licenses[0].basename():label=\"OS\", status)"
+    gcloud compute instances list --project "${PROJECT_ID}" --filter="name:${USERNAME}-ecelab" --format="table[box](name:sort=1, zone.basename(), machineType.basename():label=\"MACHINE TYPE\", networkInterfaces[0].networkIP:label=\"INTERNAL IP\", networkInterfaces[0].accessConfigs[0].natIP:label=\"PUBLIC IP\", disks[0].licenses[0].basename():label=\"OS\", status)"
     echo ""
-    echo "SSH: ${blue}gcloud compute ssh \"NAME\" [--zone \"ZONE\"] [--project \"elastic-support\"]${reset} OR ${blue}ssh -i ~/.ssh/google_compute_engine USERNAME@PUBLICIP${reset}"
+    echo "SSH: ${blue}gcloud compute ssh NAME [--zone ZONE] [--project ${PROJECT_ID}]${reset} OR ${blue}ssh -i ~/.ssh/google_compute_engine USERNAME@PUBLICIP${reset}"
   else
     debugr "No instances found"
   fi
