@@ -80,12 +80,14 @@ select_image() {
 
 # find
 find_instances() {
-  instance_count=$(gcloud compute instances list --project "${PROJECT_ID}" --filter="name:${gcp_name}" --format="value(name)" | wc -l)
+  instance_count=$(gcloud compute instances list --project "${gcp_project}" --filter="name:${gcp_name}" --format="value(name)" | wc -l)
   if [ "$instance_count" -gt 0 ]; then
-    echo "${green}[DEBUG]${reset} Instance(s) found"
-    gcloud compute instances list --project "${PROJECT_ID}" --filter="name:${gcp_name}" --format="table[box](name, zone.basename(), machineType.basename(), status, networkInterfaces[0].networkIP, networkInterfaces[0].accessConfigs[0].natIP, disks[0].licenses[0].basename())"
+    debug "Instance(s) found"
+    gcloud compute instances list --project "${gcp_project}" --filter="name:${gcp_name}" --format="table[box](name:sort=1, zone.basename(), machineType.basename():label=\"MACHINE TYPE\", networkInterfaces[0].networkIP:label=\"INTERNAL IP\", networkInterfaces[0].accessConfigs[0].natIP:label=\"PUBLIC IP\", disks[0].licenses[0].basename():label=\"OS\", status)"
+    echo ""
+    echo "SSH: ${blue}gcloud compute ssh \"NAME\" [--zone \"ZONE\"] [--project \"elastic-support\"]${reset} OR ${blue}ssh -i ~/.ssh/google_compute_engine USERNAME@PUBLICIP${reset}"
   else
-    echo "${red}[DEBUG]${reset} No instances found"
+    debugr "No instances found"
   fi
 }
 

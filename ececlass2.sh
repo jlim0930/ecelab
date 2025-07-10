@@ -15,6 +15,30 @@ green=$(tput setaf 2)
 blue=$(tput setaf 14)
 reset=$(tput sgr0)
 
+### debug mode
+DEBUG=0
+
+# Check for --debug flag
+for arg in "$@"; do
+  if [[ "$arg" == "--debug" ]]; then
+    DEBUG=1
+  fi
+done
+
+# Enable shell tracing in debug mode
+if [[ $DEBUG -eq 1 ]]; then
+  set -x
+fi
+
+# Function to run commands with optional stderr suppression
+run_cmd() {
+  if [[ $DEBUG -eq 1 ]]; then
+    "$@"
+  else
+    "$@" 2>/dev/null
+  fi
+}
+
 # Helper function to display debug messages
 debug() {
   echo "${green}[DEBUG]${reset} $1"
@@ -23,6 +47,20 @@ debug() {
 debugr() {
   echo "${red}[DEBUG]${reset} $1"
 }
+
+# find
+find_instances() {
+  instance_count=$(gcloud compute instances list --project "${gcp_project}" --filter="name:${USERNAME}" --format="value(name)" | wc -l)
+  if [ "$instance_count" -gt 0 ]; then
+    echo ""
+    gcloud compute instances list --project "${gcp_project}" --filter="name:${gcp_name}" --format="table[box](name:sort=1, zone.basename(), machineType.basename():label=\"MACHINE TYPE\", networkInterfaces[0].networkIP:label=\"INTERNAL IP\", networkInterfaces[0].accessConfigs[0].natIP:label=\"PUBLIC IP\", disks[0].licenses[0].basename():label=\"OS\", status)"
+    echo ""
+    echo "SSH: ${blue}gcloud compute ssh \"NAME\" [--zone \"ZONE\"] [--project \"elastic-support\"]${reset} OR ${blue}ssh -i ~/.ssh/google_compute_engine USERNAME@PUBLICIP${reset}"
+  else
+    debugr "No instances found"
+  fi
+}
+
 ### CHECKS
 
 # Check for updates from git repository
@@ -147,10 +185,10 @@ checkversion() {
 ### Setup venv for ansible 9.8.0
 
 debug "Configuring python venv and setting up ansible 9.8.0 - higher ansible versions have issues with EL8"
-$PYTHON_BIN -m venv ecelab &>/dev/null
-source ecelab/bin/activate &>/dev/null
-$PIP_BIN install --upgrade pip &>/dev/null
-$PIP_BIN install ansible==9.8.0 &>/dev/null
+run_cmd $PYTHON_BIN -m venv ecelab &>/dev/null
+run_cmd source ecelab/bin/activate &>/dev/null
+run_cmd $PIP_BIN install --upgrade pip &>/dev/null
+run_cmd $PIP_BIN install ansible==9.8.0 &>/dev/null
 
 ### Prompts for selections
 
@@ -595,6 +633,13 @@ resource "google_compute_disk" "data_disk" {
 }
 
 resource "google_compute_instance" "vm_instance" {
+  labels = {
+    division = "support"
+    org      = "support"
+    team     = "support"
+    project  = "${USERNAME}-ecelab"
+  }
+
   count        = ${count}
   name         = "${USERNAME}-ecelab-\${count.index + 1}"
   machine_type = "${TYPE}"
@@ -636,7 +681,7 @@ EOL
 
   # Initialize Terraform
   debug "Initializing Terraform..."
-  terraform init &>/dev/null
+  run_cmd terraform init >/dev/null
   if [ $? -ne 0 ]; then
     debugr "Terraform initialization failed. Exiting."
     exit 1
@@ -644,7 +689,7 @@ EOL
 
   # Apply Terraform configuration
   debug "Applying Terraform configuration..."
-  terraform apply -auto-approve &>/dev/null
+  run_cmd terraform apply -auto-approve >/dev/null
   if [ $? -ne 0 ]; then
     debugr "Terraform apply failed. Exiting."
     exit 1
@@ -719,7 +764,7 @@ EOL
     for ((i=1; i<=retries; i++)); do
       # Check SSH connection on port 22
       #if echo "" > /dev/tcp/$ip/22 2>/dev/null; then
-      echo "" > /dev/tcp/$ip/22 2>/dev/null
+      run_cmd echo "" > /dev/tcp/$ip/22
       if [[ $? -eq 0 ]]; then
         debug "${blue}${ip}${reset} is reachable via SSH."
         return 0
@@ -755,7 +800,7 @@ setup_ansible
 run_ansible_playbooks() {
   debug "Running ansible scripts"
   sleep 5
-  ansible-playbook -i inventory.yml preinstall.yml --extra-vars "crt=${container} ece_version=${version}"
+  ansible-playbook -i inventory.yml preinstall.yml --extra-vars "crt=${container} ece_version=${version} selinuxmode=${SELINUX} package=${cversion}"
 
   if [ $? -eq 0 ]; then
     echo ""
@@ -793,3 +838,5 @@ run_ansible_playbooks() {
 # }
 
 run_ansible_playbooks
+
+find_instances
