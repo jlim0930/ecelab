@@ -1,0 +1,25 @@
+- name: Save facts to file
+  delegate_to: localhost
+  become: no 
+  run_once: true
+  copy:
+    content: |
+      ==============================================
+      ECE Deployment Consolidated Summary
+      ----------------------------------------------
+      Adminconsole is reachable at: https://{{ primary_hostname }}:12443
+      Adminconsole password is: {{ adminconsole_root_password }}
+      ==============================================
+    dest: "{{ playbook_dir }}/eceinfo.txt"
+  when: adminconsole_root_password is defined # Only if facts are available
+
+
+
+# truncate and delete info files
+if [ -e ecelab.log ]; then
+  truncate -s 0 ecelab.log
+fi
+
+if [ -e eceinfo.txt ]; then
+  truncate -s 0 eceinfo.txt
+fi

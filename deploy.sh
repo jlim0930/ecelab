@@ -15,6 +15,12 @@ green=$(tput setaf 2)
 blue=$(tput setaf 14)
 reset=$(tput sgr0)
 
+### clean from previous runs
+for file in ecelab.log eceinfo.txt terraform.log
+do 
+  [ -f "$file" ] && truncate -s 0 "$file"
+done
+
 ### debug mode
 DEBUG=0
 
@@ -50,12 +56,20 @@ debugr() {
 
 # find
 find_instances() {
-  instance_count=$(gcloud compute instances list --project "${PROJECT_ID}" --filter="name:${USERNAME}-ecelab" --format="value(name)" | wc -l)
+  instance_count=$(gcloud compute instances list --project "${PROJECT_ID}" --filter="name:${USERNAME}-ecelab" --format="value(name)" -q| wc -l)
   if [ "$instance_count" -gt 0 ]; then
-    echo ""
-    gcloud compute instances list --project "${PROJECT_ID}" --filter="name:${USERNAME}-ecelab" --format="table[box](name:sort=1, zone.basename(), machineType.basename():label=\"MACHINE TYPE\", networkInterfaces[0].networkIP:label=\"INTERNAL IP\", networkInterfaces[0].accessConfigs[0].natIP:label=\"PUBLIC IP\", disks[0].licenses[0].basename():label=\"OS\", status)"
-    echo ""
-    echo "SSH: ${blue}gcloud compute ssh NAME [--zone ZONE] [--project ${PROJECT_ID}]${reset} OR ${blue}ssh -i ~/.ssh/google_compute_engine USERNAME@PUBLICIP${reset}"
+    # Group all output commands and pipe them to tee
+    # tee will write to eceinfo.txt AND display on the screen
+    {
+      echo ""
+      gcloud compute instances list --project "${PROJECT_ID}" --filter="name:${USERNAME}-ecelab" --format="table[box](name:sort=1, zone.basename(), machineType.basename():label=\"MACHINE TYPE\", networkInterfaces[0].networkIP:label=\"INTERNAL IP\", networkInterfaces[0].accessConfigs[0].natIP:label=\"PUBLIC IP\", disks[0].licenses[0].basename():label=\"OS\", status)" -q
+      echo ""
+      echo "SSH: ${blue}gcloud compute ssh NAME [--zone ZONE] [--project ${PROJECT_ID}]${reset} OR ${blue}ssh -i ~/.ssh/google_compute_engine USERNAME@PUBLICIP${reset}"
+      echo ""
+      echo "GUI: Adminconsole    https://<ANY PUBLIC IP>:12443"
+      echo "GUI: admin password: $(jq -r .adminconsole_root_password bootstrap-secrets.local.json)"
+      echo ""
+    } | tee eceinfo.txt
   else
     debugr "No instances found"
   fi
@@ -575,11 +589,11 @@ setup_terraform() {
   debug "Creating list of ${blue}zones${reset} from ${blue}${REGION}${reset} where ${blue}${TYPE}${reset} is available."
 
   # Get a list of available zones for the specified region and machine type
-  ZONES=$(gcloud compute zones list --filter="region:(${REGION})" --format="value(name)")
+  ZONES=$(gcloud compute zones list --filter="region:(${REGION})" --format="value(name)" -q)
   VALID_ZONES=()
 
   for ZONE in $ZONES; do
-    if gcloud compute machine-types describe "${TYPE}" --zone "$ZONE" &>/dev/null; then
+    if gcloud compute machine-types describe "${TYPE}" --zone "$ZONE" -q &>/dev/null; then
       VALID_ZONES+=("$ZONE")
     fi
   done
@@ -689,9 +703,10 @@ EOL
 
   # Apply Terraform configuration
   debug "Applying Terraform configuration..."
-  run_cmd terraform apply -auto-approve >/dev/null
+  # run_cmd terraform apply -auto-approve >/dev/null
+  terraform apply -auto-approve -no-color > terraform.log 2>&1
   if [ $? -ne 0 ]; then
-    debugr "Terraform apply failed. Exiting."
+    debugr "Terraform apply failed. Exiting.  Look in terraform.log for errors"
     exit 1
   fi
 
@@ -806,7 +821,7 @@ run_ansible_playbooks() {
     echo ""
     debug "And we are done! The URL and the password are listed above."
     debug "Installed ECE: ${blue}${version}${reset} on ${blue}${os}${reset}"
-    debug "When you are done, and want to delete the workload, run ${blue}terraform destroy -auto-approve${reset}"
+    debug "When you are done, and want to ${red}delete${reset} the workload, run ${blue}terraform destroy -auto-approve${reset}"
   else
     debug "Something went wrong... exiting. Please look in ${blue}ecelab.log${reset} for issues. Please remember to run ${blue}terraform destroy -auto-approve${reset} to delete the environment."
     exit 1
