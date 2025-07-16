@@ -16,7 +16,7 @@ blue=$(tput setaf 14)
 reset=$(tput sgr0)
 
 ### clean from previous runs
-for file in ecelab.log eceinfo.txt terraform.log
+for file in ecelab.log eceinfo.txt terraform.log terraform_debug.log
 do 
   [ -f "$file" ] && truncate -s 0 "$file"
 done
@@ -28,6 +28,10 @@ DEBUG=0
 for arg in "$@"; do
   if [[ "$arg" == "--debug" ]]; then
     DEBUG=1
+    
+    # Create Terraform main configuration file based on installation type
+    export TF_LOG=DEBUG
+    export TF_LOG_PATH="terraform_debug.log"
   fi
 done
 
@@ -635,10 +639,6 @@ setup_terraform() {
   echo "valid_zones = [$VALID_ZONES_STRING]" > terraform.tfvars
 
   debug "Creating Terraform configuration files..."
-
-  # Create Terraform main configuration file based on installation type
-  export TF_LOG=DEBUG
-  export TF_LOG_PATH="terraform_debug.log"
 
   unset count
   if [ "${installtype}" == "small" ]; then
