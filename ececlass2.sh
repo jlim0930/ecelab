@@ -16,8 +16,8 @@ blue=$(tput setaf 14)
 reset=$(tput sgr0)
 
 ### clean from previous runs
-for file in ecelab.log eceinfo.txt terraform.log
-do 
+for file in ecelab.log eceinfo.txt terraform.log terraform_debug.log
+do
   [ -f "$file" ] && truncate -s 0 "$file"
 done
 
@@ -28,6 +28,10 @@ DEBUG=0
 for arg in "$@"; do
   if [[ "$arg" == "--debug" ]]; then
     DEBUG=1
+
+    # Create Terraform main configuration file based on installation type
+    export TF_LOG=DEBUG
+    export TF_LOG_PATH="terraform_debug.log"
   fi
 done
 
@@ -66,6 +70,7 @@ find_instances() {
       echo ""
       echo "SSH: ${blue}gcloud compute ssh NAME [--zone ZONE] [--project ${PROJECT_ID}]${reset} OR ${blue}ssh -i ~/.ssh/google_compute_engine USERNAME@PUBLICIP${reset}"
       echo ""
+      echo "ECE version: ${version}"
       echo "GUI: Adminconsole    https://<ANY PUBLIC IP>:12443"
       echo "GUI: admin password: $(jq -r .adminconsole_root_password bootstrap-secrets.local.json)"
       echo ""
@@ -542,38 +547,67 @@ select_os_and_container() {
   esac
 }
 
-if [ $(checkversion $version) -ge $(checkversion "4.0.0") ]; then
-  echo ""
-  echo "${red}[DEBUG]${reset} Due to GCP image policy where it refresh all the OS to the latest without the feature of using previous minor releases we are unable to install podman-4.x or podman-5.2.x but only the latest, hence support for EL9 was removed for 3.7+ installs."
-  echo "${red}[DEBUG]${reset} Also due to GCP image policy Ubuntu 20.04 is not available any longer"
-    echo ""
+echo ""
+echo "${red}[DEBUG]${reset} Due to GCP image policy where it refresh all the OS to the latest without the feature of using previous minor releases we are unable to install podman-4.x or podman-5.2.x but only the latest, hence support for EL9 was removed for 3.7+ installs."
+echo "${red}[DEBUG]${reset} Also due to GCP image policy Ubuntu 20.04 is not available any longer"
+echo ""
 
-  select_os_and_container "Rocky 8 - Podman - x86_64" "Rocky 8 - Podman - x86_64 - selinux" "Rocky 8 - Podman - arm64" "Rocky 8 - Podman - arm64 - selinux" "Ubuntu 22.04 - Docker 25.0 - x86_64" "Ubuntu 22.04 - Docker 25.0 - arm64" "Ubuntu 22.04 - Docker 26.0 - x86_64" "Ubuntu 22.04 - Docker 26.0 - arm64" "Ubuntu 22.04 - Docker 27.0 - x86_64" "Ubuntu 22.04 - Docker 27.0 - arm64" "Ubuntu 24.04 - Docker 26.0 - x86_64" "Ubuntu 24.04 - Docker 26.0 - arm64" "Ubuntu 24.04 - Docker 27.0 - x86_64" "Ubuntu 24.04 - Docker 27.0 - arm64"
+# Declare an array to hold the list of OS choices.
+declare -a os_options
 
-elif [ $(checkversion $version) -ge $(checkversion "3.8.0") ]; then
-  echo ""
-  echo "${red}[DEBUG]${reset} Due to GCP image policy where it refresh all the OS to the latest without the feature of using previous minor releases we are unable to install podman-4.x or podman-5.2.x but only the latest, hence support for EL9 was removed for 3.7+ installs."
-  echo "${red}[DEBUG]${reset} Also due to GCP image policy Ubuntu 20.04 is not available any longer"
-  echo ""
+# Calculate the numeric version once to avoid repeated calls.
+version_num=$(checkversion "$version")
 
-  select_os_and_container "Rocky 8 - Podman - x86_64" "Rocky 8 - Podman - x86_64 - selinux" "Rocky 8 - Podman - arm64" "Rocky 8 - Podman - arm64 - selinux" "Ubuntu 22.04 - Docker 24.0 - x86_64" "Ubuntu 22.04 - Docker 24.0 - arm64" "Ubuntu 22.04 - Docker 25.0 - x86_64" "Ubuntu 22.04 - Docker 25.0 - arm64"
-
-elif [ $(checkversion $version) -ge $(checkversion "3.7.0") ]; then
-  echo ""
-  echo "${red}[DEBUG]${reset} Due to GCP image policy where it refresh all the OS to the latest without the feature of using previous minor releases we are unable to install podman-4.x or podman-5.2.x but only the latest, hence support for EL9 was removed for 3.7+ installs."
-  echo "${red}[DEBUG]${reset} Also due to GCP image policy Ubuntu 20.04 is not available any longer"
-  echo ""
-
-  select_os_and_container "Rocky 8 - Podman - x86_64" "Rocky 8 - Podman - x86_64 - selinux" "Rocky 8 - Podman - arm64" "Rocky 8 - Podman - arm64 - selinux" "Ubuntu 22.04 - Docker 24.0 - x86_64" "Ubuntu 22.04 - Docker 24.0 - arm64"
-
+# Now, select the correct list of options based on the version.
+if [ "$version_num" -ge "$(checkversion '4.0.0')" ]; then
+  os_options=(
+    "Rocky 8 - Podman - x86_64"
+    "Rocky 8 - Podman - x86_64 - selinux"
+    "Rocky 8 - Podman - arm64"
+    "Rocky 8 - Podman - arm64 - selinux"
+    "Ubuntu 22.04 - Docker 25.0 - x86_64"
+    "Ubuntu 22.04 - Docker 25.0 - arm64"
+    "Ubuntu 22.04 - Docker 26.0 - x86_64"
+    "Ubuntu 22.04 - Docker 26.0 - arm64"
+    "Ubuntu 22.04 - Docker 27.0 - x86_64"
+    "Ubuntu 22.04 - Docker 27.0 - arm64"
+    "Ubuntu 24.04 - Docker 26.0 - x86_64"
+    "Ubuntu 24.04 - Docker 26.0 - arm64"
+    "Ubuntu 24.04 - Docker 27.0 - x86_64"
+    "Ubuntu 24.04 - Docker 27.0 - arm64"
+  )
+elif [ "$version_num" -ge "$(checkversion '3.8.0')" ]; then
+  os_options=(
+    "Rocky 8 - Podman - x86_64"
+    "Rocky 8 - Podman - x86_64 - selinux"
+    "Rocky 8 - Podman - arm64"
+    "Rocky 8 - Podman - arm64 - selinux"
+    "Ubuntu 22.04 - Docker 24.0 - x86_64"
+    "Ubuntu 22.04 - Docker 24.0 - arm64"
+    "Ubuntu 22.04 - Docker 25.0 - x86_64"
+    "Ubuntu 22.04 - Docker 25.0 - arm64"
+  )
+elif [ "$version_num" -ge "$(checkversion '3.7.0')" ]; then
+  os_options=(
+    "Rocky 8 - Podman - x86_64"
+    "Rocky 8 - Podman - x86_64 - selinux"
+    "Rocky 8 - Podman - arm64"
+    "Rocky 8 - Podman - arm64 - selinux"
+    "Ubuntu 22.04 - Docker 24.0 - x86_64"
+    "Ubuntu 22.04 - Docker 24.0 - arm64"
+  )
 else
-  echo ""
-  echo "${red}[DEBUG]${reset} Due to GCP image policy where it refresh all the OS to the latest without the feature of using previous minor releases we are unable to install podman-4.x or podman-5.2.x but only the latest, hence support for EL9 was removed for 3.7+ installs."
-  echo "${red}[DEBUG]${reset} Also due to GCP image policy Ubuntu 20.04 is not available any longer"
-  echo ""
-
-  select_os_and_container "Rocky 8 - Podman - x86_64" "Rocky 8 - Podman - arm64" "Rocky 8 - Docker 20.10 - x86_64" "Rocky 8 - Docker 20.10 - arm64"
+  os_options=(
+    "Rocky 8 - Podman - x86_64"
+    "Rocky 8 - Podman - arm64"
+    "Rocky 8 - Docker 20.10 - x86_64"
+    "Rocky 8 - Docker 20.10 - arm64"
+  )
 fi
+
+# Finally, call the function a single time with the chosen array of options.
+# The "${os_options[@]}" syntax expands the array correctly into separate arguments.
+select_os_and_container "${os_options[@]}"
 
 # Restore the original COLUMNS value
 COLUMNS=$original_columns
@@ -607,7 +641,6 @@ setup_terraform() {
 
   debug "Creating Terraform configuration files..."
 
-  # Create Terraform main configuration file based on installation type
   unset count
   if [ "${installtype}" == "small" ]; then
     count=3

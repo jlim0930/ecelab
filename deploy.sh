@@ -70,6 +70,7 @@ find_instances() {
       echo ""
       echo "SSH: ${blue}gcloud compute ssh NAME [--zone ZONE] [--project ${PROJECT_ID}]${reset} OR ${blue}ssh -i ~/.ssh/google_compute_engine USERNAME@PUBLICIP${reset}"
       echo ""
+      echo "ECE version: ${version}"
       echo "GUI: Adminconsole    https://<ANY PUBLIC IP>:12443"
       echo "GUI: admin password: $(jq -r .adminconsole_root_password bootstrap-secrets.local.json)"
       echo ""
