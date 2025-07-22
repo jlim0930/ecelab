@@ -548,7 +548,6 @@ select_os_and_container() {
 }
 
 echo ""
-echo "${red}[DEBUG]${reset} Due to GCP image policy where it refresh all the OS to the latest without the feature of using previous minor releases we are unable to install podman-4.x or podman-5.2.x but only the latest, hence support for EL9 was removed for 3.7+ installs."
 echo "${red}[DEBUG]${reset} Also due to GCP image policy Ubuntu 20.04 is not available any longer"
 echo ""
 
@@ -565,6 +564,10 @@ if [ "$version_num" -ge "$(checkversion '4.0.0')" ]; then
     "Rocky 8 - Podman - x86_64 - selinux"
     "Rocky 8 - Podman - arm64"
     "Rocky 8 - Podman - arm64 - selinux"
+    "Rocky 9 - Podman - x86_64"
+    "Rocky 9 - Podman - x86_64 - selinux"
+    "Rocky 9 - Podman - arm64"
+    "Rocky 9 - Podman - arm64 - selinux"
     "Ubuntu 22.04 - Docker 25.0 - x86_64"
     "Ubuntu 22.04 - Docker 25.0 - arm64"
     "Ubuntu 22.04 - Docker 26.0 - x86_64"
@@ -582,6 +585,10 @@ elif [ "$version_num" -ge "$(checkversion '3.8.0')" ]; then
     "Rocky 8 - Podman - x86_64 - selinux"
     "Rocky 8 - Podman - arm64"
     "Rocky 8 - Podman - arm64 - selinux"
+    "Rocky 9 - Podman - x86_64"
+    "Rocky 9 - Podman - x86_64 - selinux"
+    "Rocky 9 - Podman - arm64"
+    "Rocky 9 - Podman - arm64 - selinux"
     "Ubuntu 22.04 - Docker 24.0 - x86_64"
     "Ubuntu 22.04 - Docker 24.0 - arm64"
     "Ubuntu 22.04 - Docker 25.0 - x86_64"
