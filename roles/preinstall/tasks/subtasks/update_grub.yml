@@ -1,24 +1,46 @@
 ---
-- name: Check if GRUB_CMDLINE_LINUX requires modification
-  command: grep -q 'cgroup_enable=memory swapaccount=1 cgroup.memory=nokmem' /etc/default/grub
-  register: grub_check
-  failed_when: false
-  changed_when: false
+# - name: Check if GRUB_CMDLINE_LINUX requires modification
+#   command: grep -q 'cgroup_enable=memory swapaccount=1 cgroup.memory=nokmem' /etc/default/grub
+#   register: grub_check
+#   failed_when: false
+#   changed_when: false
 
-- name: Modify GRUB_CMDLINE_LINUX if needed
-  lineinfile:
-    state: present
-    dest: /etc/default/grub
+# - name: Modify GRUB_CMDLINE_LINUX if needed
+#   lineinfile:
+#     state: present
+#     dest: /etc/default/grub
+#     backrefs: yes
+#     regexp: '^(GRUB_CMDLINE_LINUX=")(.*)(")$'
+#     line: '\1\2 cgroup_enable=memory swapaccount=1 cgroup.memory=nokmem\3'
+#   register: modify_grub_cmdline  
+#   when: grub_check.rc != 0
+
+# - name: Run bootloader update
+#   command: "{{ bootloader_update_command }}"
+#   register: bootloader_update_result
+#   failed_when:
+#     - bootloader_update_result is failed
+#     - bootloader_update_result.rc is defined and bootloader_update_result.rc != 0
+#   when: modify_grub_cmdline.changed
+
+- name: Ensure required kernel parameters are present in GRUB
+  ansible.builtin.lineinfile:
+    path: /etc/default/grub
     backrefs: yes
-    regexp: '^(GRUB_CMDLINE_LINUX=")(.*)(")$'
-    line: '\1\2 cgroup_enable=memory swapaccount=1 cgroup.memory=nokmem\3'
-  register: modify_grub_cmdline  
-  when: grub_check.rc != 0
+    # This regex finds the line and uses a negative lookahead to ensure the item isn't already there
+    regexp: '^(GRUB_CMDLINE_LINUX=")(?!.*\b{{ item }}\b)(.*)(")$'
+    # This reconstructs the line, adding the new item
+    line: '\1\2 {{ item }}\3'
+  with_items:
+    - 'cgroup_enable=memory'
+    - 'swapaccount=1'
+    - 'cgroup.memory=nokmem'
+  register: grub_modify_result # Save the result of this loop
 
-- name: Run bootloader update
-  command: "{{ bootloader_update_command }}"
+- name: Run bootloader update if grub config was changed
+  ansible.builtin.command: "{{ bootloader_update_command }}"
+  when: grub_modify_result.changed # Run ONLY if the task above made a change
   register: bootloader_update_result
   failed_when:
-    - bootloader_update_result is failed
+    - bootloader_update_result.failed
     - bootloader_update_result.rc is defined and bootloader_update_result.rc != 0
-  when: modify_grub_cmdline.changed

@@ -1,23 +1,4 @@
 --- 
-# - name: Remove Docker packages
-#   package:
-#     name: "{{ item }}"
-#     state: absent
-#   vars:
-#     packages:
-#     - docker
-#     - docker-ce
-#     - docker-ce-cli
-#     - containerd
-#     - docker-buildx-plugin
-#   with_items: "{{ packages }}"
-#   register: remove_packages
-#   retries: 10
-#   delay: 5
-#   until: remove_packages is succeeded
-#   ignore_errors: yes
-#   failed_when: remove_packages is failed and (remove_packages.results | selectattr('rc', 'defined') | map(attribute='rc') | select('eq', 0) | list | length == 0)
-
 - name: Add Docker repository
   yum_repository:
     name: "{{ docker_version_map[docker_version]['name'] }}"
@@ -33,23 +14,42 @@
   ignore_errors: yes
   failed_when: repo_installed is failed and repo_installed.rc != 0
 
-- name: Install Docker
-  package:
+# - name: Install Docker
+#   package:
+#     name: "{{ docker_version_map[docker_version]['package'] }}"
+#     state: present
+#   register: docker_installed
+#   retries: 3
+#   delay: 10
+#   until: docker_installed is succeeded
+#   ignore_errors: yes
+#   failed_when: docker_installed is failed and docker_installed.rc != 0
+
+- name: Install Docker (asynchronously)
+  ansible.builtin.package:
     name: "{{ docker_version_map[docker_version]['package'] }}"
     state: present
-  register: docker_installed
-  retries: 3
-  delay: 10
-  until: docker_installed is succeeded
-  ignore_errors: yes
-  failed_when: docker_installed is failed and docker_installed.rc != 0
+  async: 300  # Allow the task to run for up to 5 minutes
+  poll: 0    # Check on the task's status every 15 seconds
+  register: crt_installed
 
-- name: Lock Docker package versions with dnf_versionlock
+# - name: Lock Docker package versions with dnf_versionlock
+#   community.general.dnf_versionlock:
+#     name:
+#       - docker-ce-20.10.*
+#       - docker-ce-cli-20.10.*
+#       - containerd.io-1.5.*
+#     state: present
+#   register: lock_packages
+#   failed_when: lock_packages is failed
+
+- name: Lock docker package versions with dnf_versionlock
   community.general.dnf_versionlock:
-    name:
-      - docker-ce-20.10.*
-      - docker-ce-cli-20.10.*
-      - containerd.io-1.5.*
+    name: "{{ docker_version_map[docker_version]['package'] }}"
     state: present
-  register: lock_packages
-  failed_when: lock_packages is failed
+  async: 300  # Allow the task to run for up to 5 minutes
+  poll: 0    # Check on the task's status every 15 seconds
+  register: lock_docker_versions
+  failed_when:
+    - lock_docker_versions is failed
+    - lock_docker_versions.rc is defined and lock_docker_versions.rc != 0

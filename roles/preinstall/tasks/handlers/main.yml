@@ -1,5 +1,6 @@
 ---
 - name: Reload sysctl
+  listen: "Reload sysctl"
   command: sysctl -p
   register: sysctl_reload
   failed_when:

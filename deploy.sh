@@ -681,7 +681,7 @@ resource "google_compute_disk" "data_disk" {
 
   count = ${count}
   name  = "${USERNAME}-ecelab-data-disk-\${count.index + 1}"
-  type  = "pd-standard"
+  type  = "pd-balanced"
   zone  = random_shuffle.zone_selection.result[count.index]
   size  = 150
 }

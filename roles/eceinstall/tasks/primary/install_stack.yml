@@ -15,6 +15,16 @@
   become: yes
   become_method: sudo
   become_user: elastic
+  async: 1500
+  poll: 0
+
+- name: Monitoring installer progress
+  ansible.builtin.shell: 
+    cmd: tail -n 5 /mnt/data/elastic/logs/bootstrap-logs/bootstrap.log
+  until: "'[no.found.util.LogApplicationExit$] Application is exiting {}' in ece_installer_result_text.stdout"
+  register: ece_installer_result_text
+  retries: 250
+  delay: 60
 
 - name: Remember the bootstrap secrets
   command: cat {{ data_dir }}/elastic/bootstrap-state/bootstrap-secrets.json

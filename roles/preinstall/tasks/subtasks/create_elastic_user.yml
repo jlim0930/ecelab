@@ -1,44 +1,83 @@
 ---
-- name: Add group elastic
-  group:
-    name: elastic
-    state: present
-    gid: "{{ elastic_gid }}"
-  # when: "'elastic' not in ansible_facts.getent_group"
+# - name: Add group elastic
+#   group:
+#     name: elastic
+#     state: present
+#     gid: "{{ elastic_gid }}"
+#   # when: "'elastic' not in ansible_facts.getent_group"
 
-- name: Add group based on crt variable
-  group:
-    name: "{{ 'docker' if crt == 'docker' else 'podman' }}"
-    state: present
+# - name: Add group based on crt variable
+#   group:
+#     name: "{{ 'docker' if crt == 'docker' else 'podman' }}"
+#     state: present
+#   when: crt in ['docker', 'podman']
+
+# - name: Add user elastic
+#   user:
+#     name: elastic
+#     group: elastic
+#     groups: "{{ 'docker' if crt == 'docker' else 'podman' }}"
+#     uid: "{{ elastic_uid }}"
+#     append: yes
+#     state: present
+#     generate_ssh_key: true
+#   when: crt in ['docker', 'podman']
+
+# - name: Modify user elastic to include in the appropriate group
+#   user:
+#     name: elastic
+#     groups: "{{ 'docker' if crt == 'docker' else 'podman' }}"
+#     append: yes
+#   when: crt in ['docker', 'podman']
+
+# - name: Set password policy for elastic user
+#   lineinfile:
+#     path: /etc/sudoers.d/99-ece-users
+#     line: 'elastic ALL=(ALL) NOPASSWD:ALL'
+#     state: present
+#     create: yes
+#   register: pwd_policy_set
+#   failed_when: pwd_policy_set is failed
+
+- name: Define container runtime group based on crt variable
+  ansible.builtin.set_fact:
+    container_group: "{{ 'docker' if crt == 'docker' else 'podman' }}"
   when: crt in ['docker', 'podman']
 
-- name: Add user elastic
-  user:
-    name: elastic
-    group: elastic
-    groups: "{{ 'docker' if crt == 'docker' else 'podman' }}"
-    uid: "{{ elastic_uid }}"
-    append: yes
+- name: Ensure required groups exist
+  ansible.builtin.group:
+    name: "{{ item.name }}"
+    gid: "{{ item.gid | default(omit) }}"
     state: present
-    generate_ssh_key: true
-  when: crt in ['docker', 'podman']
+  with_items:
+    - { name: 'elastic', gid: "{{ elastic_gid }}" }
+    - { name: "{{ container_group }}" }
+  when: container_group is defined
 
-- name: Modify user elastic to include in the appropriate group
-  user:
-    name: elastic
-    groups: "{{ 'docker' if crt == 'docker' else 'podman' }}"
-    append: yes
-  when: crt in ['docker', 'podman']
+- name: Create elastic user with correct group membership and sudo policy
+  block:
+    - name: Create user 'elastic' and assign to groups
+      ansible.builtin.user:
+        name: elastic
+        group: elastic
+        groups: "{{ container_group }}"
+        uid: "{{ elastic_uid }}"
+        append: yes
+        state: present
+        generate_ssh_key: true
+      when: container_group is defined
 
-- name: Set password policy for elastic user
-  lineinfile:
-    path: /etc/sudoers.d/99-ece-users
-    line: 'elastic ALL=(ALL) NOPASSWD:ALL'
-    state: present
-    create: yes
-  register: pwd_policy_set
-  failed_when: pwd_policy_set is failed
-
+    - name: Set NOPASSWD sudo policy for elastic user
+      ansible.builtin.lineinfile:
+        path: /etc/sudoers.d/99-ece-users
+        line: 'elastic ALL=(ALL) NOPASSWD:ALL'
+        state: present
+        create: yes
+        owner: root
+        group: root
+        mode: '0440'
+        validate: 'visudo -cf %s' # CRITICAL: Prevents saving a broken sudoers file
+        
 - name: Configure boot user
   template:
     src: elastic.cfg.j2

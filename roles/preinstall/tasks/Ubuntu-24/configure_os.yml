@@ -12,22 +12,23 @@
     - remove_packages is failed
     - remove_packages.rc is defined and remove_packages.rc != 0
 
-- name: Install cloud-init package
-  package:
-    name: cloud-init
-    state: present
-  register: install_cloud_init
-  retries: 3
-  delay: 10
-  until: install_cloud_init is succeeded
-  ignore_errors: yes
-  failed_when:
-    - install_cloud_init is failed
-    - install_cloud_init.rc is defined and install_cloud_init.rc != 0
+# - name: Install cloud-init package
+#   package:
+#     name: cloud-init
+#     state: present
+#   register: install_cloud_init
+#   retries: 3
+#   delay: 10
+#   until: install_cloud_init is succeeded
+#   ignore_errors: yes
+#   failed_when:
+#     - install_cloud_init is failed
+#     - install_cloud_init.rc is defined and install_cloud_init.rc != 0
 
 - name: Install base dependencies - Debian based
   apt:
     name: 
+      - cloud-init
       - xfsprogs
       - acl
       - lvm2

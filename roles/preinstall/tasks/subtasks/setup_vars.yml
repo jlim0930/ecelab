@@ -31,3 +31,9 @@
       - "docker_version in docker_version_map.keys()"
     msg: "Docker version must be one of {{ docker_version_map.keys() }}"
   when: crt == "docker"
+
+- name: Assert Podman version is supported
+  assert:
+    that: "podman_version in podman_version_map.keys()"
+    msg: "Podman version must be one of {{ podman_version_map.keys() }}"
+  when: crt == "podman"

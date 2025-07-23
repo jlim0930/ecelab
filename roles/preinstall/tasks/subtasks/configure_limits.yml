@@ -8,30 +8,53 @@
     - create_limits_file is failed
     - create_limits_file.rc is defined and create_limits_file.rc != 0
 
-- name: Modify pam limits
-  pam_limits:
-    domain: "{{ item.domain }}"
-    limit_type: "{{ item.limit_type }}"
-    limit_item: "{{ item.limit_item }}"
-    value: "{{ item.value }}"
-    dest: "{{ system_limits_file }}"
-  with_items:
-  - { domain: '*', limit_type: 'soft', limit_item: 'nofile', value: '1024000' }
-  - { domain: '*', limit_type: 'hard', limit_item: 'nofile', value: '1024000' }
-  - { domain: '*', limit_type: 'soft', limit_item: 'memlock', value: 'unlimited' }
-  - { domain: '*', limit_type: 'hard', limit_item: 'memlock', value: 'unlimited' }
-  - { domain: 'elastic', limit_type: 'soft', limit_item: 'nofile', value: '1024000' }
-  - { domain: 'elastic', limit_type: 'hard', limit_item: 'nofile', value: '1024000' }
-  - { domain: 'elastic', limit_type: 'soft', limit_item: 'memlock', value: 'unlimited' }
-  - { domain: 'elastic', limit_type: 'hard', limit_item: 'memlock', value: 'unlimited' }
-  - { domain: 'root', limit_type: 'soft', limit_item: 'nofile', value: '1024000' }
-  - { domain: 'root', limit_type: 'hard', limit_item: 'nofile', value: '1024000' }
-  - { domain: 'root', limit_type: 'soft', limit_item: 'memlock', value: 'unlimited' }
-  register: pam_limits_result
-  failed_when:
-    - pam_limits_result.failed
-    - pam_limits_result.rc is defined and pam_limits_result.rc != 0
+# - name: Modify pam limits
+#   pam_limits:
+#     domain: "{{ item.domain }}"
+#     limit_type: "{{ item.limit_type }}"
+#     limit_item: "{{ item.limit_item }}"
+#     value: "{{ item.value }}"
+#     dest: "{{ system_limits_file }}"
+#   with_items:
+#   - { domain: '*', limit_type: 'soft', limit_item: 'nofile', value: '1024000' }
+#   - { domain: '*', limit_type: 'hard', limit_item: 'nofile', value: '1024000' }
+#   - { domain: '*', limit_type: 'soft', limit_item: 'memlock', value: 'unlimited' }
+#   - { domain: '*', limit_type: 'hard', limit_item: 'memlock', value: 'unlimited' }
+#   - { domain: 'elastic', limit_type: 'soft', limit_item: 'nofile', value: '1024000' }
+#   - { domain: 'elastic', limit_type: 'hard', limit_item: 'nofile', value: '1024000' }
+#   - { domain: 'elastic', limit_type: 'soft', limit_item: 'memlock', value: 'unlimited' }
+#   - { domain: 'elastic', limit_type: 'hard', limit_item: 'memlock', value: 'unlimited' }
+#   - { domain: 'root', limit_type: 'soft', limit_item: 'nofile', value: '1024000' }
+#   - { domain: 'root', limit_type: 'hard', limit_item: 'nofile', value: '1024000' }
+#   - { domain: 'root', limit_type: 'soft', limit_item: 'memlock', value: 'unlimited' }
+#   register: pam_limits_result
+#   failed_when:
+#     - pam_limits_result.failed
+#     - pam_limits_result.rc is defined and pam_limits_result.rc != 0
 
+- name: Optimize pam limits configuration
+  vars:
+    pam_limits_to_set:
+      - { domain: '*', limit_type: 'soft', limit_item: 'nofile', value: '1024000' }
+      - { domain: '*', limit_type: 'hard', limit_item: 'nofile', value: '1024000' }
+      - { domain: '*', limit_type: 'soft', limit_item: 'memlock', value: 'unlimited' }
+      - { domain: '*', limit_type: 'hard', limit_item: 'memlock', value: 'unlimited' }
+      - { domain: 'elastic', limit_type: 'soft', limit_item: 'nofile', value: '1024000' }
+      - { domain: 'elastic', limit_type: 'hard', limit_item: 'nofile', value: '1024000' }
+      - { domain: 'elastic', limit_type: 'soft', limit_item: 'memlock', value: 'unlimited' }
+      - { domain: 'elastic', limit_type: 'hard', limit_item: 'memlock', value: 'unlimited' }
+      - { domain: 'root', limit_type: 'soft', limit_item: 'nofile', value: '1024000' }
+      - { domain: 'root', limit_type: 'hard', limit_item: 'nofile', value: '1024000' }
+      - { domain: 'root', limit_type: 'soft', limit_item: 'memlock', value: 'unlimited' }
+  ansible.builtin.blockinfile:
+    dest: "{{ system_limits_file }}"
+    create: yes
+    marker: "# {mark} ANSIBLE MANAGED BLOCK FOR PAM LIMITS"
+    block: |
+      {% for item in pam_limits_to_set %}
+      {{ item.domain }} {{ item.limit_type }} {{ item.limit_item }} {{ item.value }}
+      {% endfor %}
+      
 - name: Delete /etc/security/limits.d/20-nproc.conf if exists
   file:
     path: /etc/security/limits.d/20-nproc.conf

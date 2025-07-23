@@ -9,23 +9,41 @@
     repo: "{{ docker_version_map[docker_version]['repo'] }}"
     state: present
 
-- name: Install docker
-  apt:
+# - name: Install docker
+#   apt:
+#     name: "{{ docker_version_map[docker_version]['package'] }}"
+#     update_cache: yes
+#     state: present
+
+- name: Install Docker (asynchronously)
+  ansible.builtin.package:
     name: "{{ docker_version_map[docker_version]['package'] }}"
-    update_cache: yes
     state: present
+  async: 300  # Allow the task to run for up to 5 minutes
+  poll: 0    # Check on the task's status every 15 seconds
+  register: crt_installed
 
-- name: Pin docker-ce package | pre - base - Ubuntu-22 - install_docker
-  ansible.builtin.dpkg_selections:
-    name: docker-ce
-    selection: hold
+# - name: Pin docker-ce package | pre - base - Ubuntu-22 - install_docker
+#   ansible.builtin.dpkg_selections:
+#     name: docker-ce
+#     selection: hold
 
-- name: Pin docker-ce-cli package | pre - base - Ubuntu-22 - install_docker
-  ansible.builtin.dpkg_selections:
-    name: docker-ce-cli
-    selection: hold
+# - name: Pin docker-ce-cli package | pre - base - Ubuntu-22 - install_docker
+#   ansible.builtin.dpkg_selections:
+#     name: docker-ce-cli
+#     selection: hold
 
-- name: Pin containerd.io package | pre - base - Ubuntu-22 - install_docker
+# - name: Pin containerd.io package | pre - base - Ubuntu-22 - install_docker
+#   ansible.builtin.dpkg_selections:
+#     name: containerd.io
+#     selection: hold
+
+- name: Pin Docker related packages
   ansible.builtin.dpkg_selections:
-    name: containerd.io
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
     selection: hold
+  async: 300  # Allow the task to run for up to 5 minutes
+  poll: 0    # Check on the task's status every 15 seconds

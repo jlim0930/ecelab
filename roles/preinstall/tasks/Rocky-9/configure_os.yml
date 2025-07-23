@@ -1,4 +1,9 @@
 ---
+- name: Update dnf cache on Red Hat family systems
+  ansible.builtin.dnf:
+    update_cache: true
+  when: ansible_os_family == "RedHat"
+
 - name: Remove nscd package
   package:
     name: nscd
@@ -12,60 +17,105 @@
     - remove_packages is failed
     - remove_packages.rc is defined and remove_packages.rc != 0
 
-- name: Install cloud-init package
-  package:
-    name: cloud-init
-    state: present
-  register: install_cloud_init
-  retries: 3
-  delay: 10
-  until: install_cloud_init is succeeded
-  ignore_errors: yes
-  failed_when:
-    - install_cloud_init is failed
-    - install_cloud_init.rc is defined and install_cloud_init.rc != 0
+# - name: Install cloud-init package
+#   package:
+#     name: cloud-init
+#     state: present
+#   register: install_cloud_init
+#   retries: 3
+#   delay: 10
+#   until: install_cloud_init is succeeded
+#   ignore_errors: yes
+#   failed_when:
+#     - install_cloud_init is failed
+#     - install_cloud_init.rc is defined and install_cloud_init.rc != 0
 
-- name: Install base dependencies - RedHat based
-  yum:
-    name: 
+# - name: Install base dependencies - RedHat based
+#   yum:
+#     name: 
+#       - lvm2
+#       - mdadm
+#       - iptables
+#       - dnf-plugins-core
+#       - python3-dnf-plugin-versionlock
+#     state: present
+#     update_cache: yes
+#   register: install_dependencies
+#   retries: 3
+#   delay: 10
+#   until: install_dependencies is succeeded
+#   ignore_errors: yes
+#   failed_when:
+#     - install_dependencies is failed
+#     - install_dependencies.rc is defined and install_dependencies.rc != 0
+
+- name: Install required system packages
+  ansible.builtin.package:
+    name:
+      - cloud-init
       - lvm2
       - mdadm
       - iptables
       - dnf-plugins-core
       - python3-dnf-plugin-versionlock
       - containernetworking-plugins
+      - policycoreutils-python-utils
     state: present
     update_cache: yes
-  register: install_dependencies
+  register: install_packages
   retries: 3
   delay: 10
-  until: install_dependencies is succeeded
+  until: install_packages is succeeded
   ignore_errors: yes
   failed_when:
-    - install_dependencies is failed
-    - install_dependencies.rc is defined and install_dependencies.rc != 0
+    - install_packages is failed
+    - install_packages.rc is defined and install_packages.rc != 0
 
-- name: Disable SELinux
-  selinux:
-    state: disabled
-  register: disable_selinux
-  when:
-    - selinuxmode == "none"
+# - name: Disable SELinux
+#   selinux:
+#     state: disabled
+#   register: disable_selinux
+#   when:
+#     - selinuxmode == "none"
+#   failed_when:
+#     - disable_selinux is failed
+#     - disable_selinux.rc is defined and disable_selinux.rc != 0
+
+# - name: Enable SELinux
+#   selinux:
+#     state: enforcing
+#     policy: targeted
+#   register: enable_selinux
+#   when:
+#     - selinuxmode == "selinux"
+#   failed_when:
+#     - enable_selinux is failed
+#     - enable_selinux.rc is defined and enable_selinux.rc != 0
+
+- name: Configure SELinux state
+  ansible.builtin.selinux:
+    state: "{{ 'enforcing' if selinuxmode == 'selinux' else 'disabled' }}"
+    policy: "{{ 'targeted' if selinuxmode == 'selinux' else omit }}"
+  when: selinuxmode in ['selinux', 'none']
+  register: selinux_status
   failed_when:
-    - disable_selinux is failed
-    - disable_selinux.rc is defined and disable_selinux.rc != 0
+    - selinux_status is failed
+    - selinux_status.rc is defined and selinux_status.rc != 0
 
-- name: Enable SELinux
-  selinux:
-    state: enforcing
-    policy: targeted
-  register: enable_selinux
-  when:
-    - selinuxmode == "selinux"
-  failed_when:
-    - enable_selinux is failed
-    - enable_selinux.rc is defined and enable_selinux.rc != 0
+- name: Verify that fs.may_detach_mounts is enabled
+  lineinfile:
+    path: /etc/sysctl.conf
+    regexp: '^fs.may_detach_mounts'
+    line: 'fs.may_detach_mounts = 1'
+    create: yes
 
+- name: Disable firewalld
+  ansible.builtin.systemd:
+    name: firewalld
+    state: stopped
+    enabled: no
+  ignore_errors: true
+  
 - name: Replace NAME in /etc/os-release based on container runtime
   lineinfile:
     path: /etc/os-release
@@ -73,3 +123,4 @@
     line: "{{ 'NAME=\"CentOS Linux\"' if crt == 'docker' else 'NAME=\"Red Hat Enterprise\"' }}"
   when:
     - ece_version is version('3.7.0', '<')
+  

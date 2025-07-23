@@ -1,41 +1,67 @@
 ---
-- name: Create sysctl settings file
-  file:
-    path: "{{ sysctl_settings_file }}"
-    state: touch
-  register: sysctl_file_created
-  failed_when:
-    - sysctl_file_created is failed
-    - sysctl_file_created.rc is defined and sysctl_file_created.rc != 0
+# - name: Create sysctl settings file
+#   file:
+#     path: "{{ sysctl_settings_file }}"
+#     state: touch
+#   register: sysctl_file_created
+#   failed_when:
+#     - sysctl_file_created is failed
+#     - sysctl_file_created.rc is defined and sysctl_file_created.rc != 0
 
-- name: sysctl_scripts.yml || set sysctl items
-  sysctl:
-    name: "{{ item.name }}"
-    value: "{{ item.value }}"
-    reload: yes
-    state: present
-    sysctl_set: yes 
-    sysctl_file: "{{ sysctl_settings_file }}"
-  with_items:
-  -  { name: 'net.ipv4.tcp_max_syn_backlog', value: '65536' }
-  -  { name: 'net.core.somaxconn', value: '32768' }
-  -  { name: 'net.core.netdev_max_backlog', value: '32768' }
-  -  { name: 'vm.max_map_count', value: '262144' }
-  -  { name: 'vm.swappiness', value: '1' }
-  -  { name: 'net.ipv4.tcp_keepalive_time', value: '1800' }
-  -  { name: 'net.netfilter.nf_conntrack_tcp_timeout_established', value: '7200' }
-  -  { name: 'net.netfilter.nf_conntrack_max', value: '262140' }
-  -  { name: 'net.ipv4.ip_forward', value: '1'}
-  -  { name: 'net.ipv4.tcp_retries2', value: '5'}
-  register: sysctl_set_results
-  failed_when:
-    - sysctl_set_results.failed
-    - sysctl_set_results.rc is defined and sysctl_set_results.rc != 0
+# - name: sysctl_scripts.yml || set sysctl items
+#   sysctl:
+#     name: "{{ item.name }}"
+#     value: "{{ item.value }}"
+#     reload: yes
+#     state: present
+#     sysctl_set: yes 
+#     sysctl_file: "{{ sysctl_settings_file }}"
+#   with_items:
+#   -  { name: 'net.ipv4.tcp_max_syn_backlog', value: '65536' }
+#   -  { name: 'net.core.somaxconn', value: '32768' }
+#   -  { name: 'net.core.netdev_max_backlog', value: '32768' }
+#   -  { name: 'vm.max_map_count', value: '262144' }
+#   -  { name: 'vm.swappiness', value: '1' }
+#   -  { name: 'net.ipv4.tcp_keepalive_time', value: '1800' }
+#   -  { name: 'net.netfilter.nf_conntrack_tcp_timeout_established', value: '7200' }
+#   -  { name: 'net.netfilter.nf_conntrack_max', value: '262140' }
+#   -  { name: 'net.ipv4.ip_forward', value: '1'}
+#   -  { name: 'net.ipv4.tcp_retries2', value: '5'}
+#   register: sysctl_set_results
+#   failed_when:
+#     - sysctl_set_results.failed
+#     - sysctl_set_results.rc is defined and sysctl_set_results.rc != 0
 
-- name: Reload sysctl
-  command: sysctl -p
-  register: sysctl_reload
-  when: sysctl_set_results.changed
-  failed_when:
-    - sysctl_reload is failed
-    - sysctl_reload.rc is defined and sysctl_reload.rc != 0
+# - name: Reload sysctl
+#   command: sysctl -p
+#   register: sysctl_reload
+#   when: sysctl_set_results.changed
+#   failed_when:
+#     - sysctl_reload is failed
+#     - sysctl_reload.rc is defined and sysctl_reload.rc != 0
+
+- name: Write sysctl settings to configuration file
+  vars:
+    sysctl_parameters:
+      - { name: 'net.ipv4.tcp_max_syn_backlog', value: '65536' }
+      - { name: 'net.core.somaxconn', value: '32768' }
+      - { name: 'net.core.netdev_max_backlog', value: '32768' }
+      - { name: 'vm.max_map_count', value: '262144' }
+      - { name: 'vm.swappiness', value: '1' }
+      - { name: 'net.ipv4.tcp_keepalive_time', value: '1800' }
+      - { name: 'net.netfilter.nf_conntrack_tcp_timeout_established', value: '7200' }
+      - { name: 'net.netfilter.nf_conntrack_max', value: '262140' }
+      - { name: 'net.ipv4.ip_forward', value: '1' }
+      - { name: 'net.ipv4.tcp_retries2', value: '5' }
+  ansible.builtin.template:
+    src: sysctl.conf.j2
+    dest: "{{ sysctl_settings_file }}" # e.g., /etc/sysctl.d/99-ansible.conf
+    owner: root
+    group: root
+    mode: '0644'
+  register: sysctl_template_result # Register the result of this task
+
+- name: Reload sysctl settings if configuration changed
+  ansible.builtin.command:
+    cmd: sysctl --system
+  when: sysctl_template_result.changed # Run this task ONLY if the template task reported a change
