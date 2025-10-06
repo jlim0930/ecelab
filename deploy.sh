@@ -634,8 +634,10 @@ setup_terraform() {
   VALID_ZONES=()
 
   for ZONE in $ZONES; do
-    if gcloud compute machine-types describe "${TYPE}" --zone "$ZONE" -q &>/dev/null; then
-      VALID_ZONES+=("$ZONE")
+    if [ "$ZONE" != "us-central1-a" ]; then
+      if gcloud compute machine-types describe "${TYPE}" --zone "$ZONE" -q &>/dev/null; then
+        VALID_ZONES+=("$ZONE")
+      fi
     fi
   done
 
