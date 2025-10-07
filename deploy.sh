@@ -777,6 +777,7 @@ all:
     ansible_become: yes
     device_name: ${DISK2}
     outside_ip: "{{ groups['primary'][0] }}"
+    ansible_ssh_timeout: 120
   children:
 EOL
 
@@ -856,7 +857,7 @@ setup_ansible
 # Run Ansible playbooks
 run_ansible_playbooks() {
   debug "Running ansible scripts"
-  sleep 5
+  sleep 10
   ansible-playbook -i inventory.yml combined.yml --extra-vars "crt=${container} ece_version=${version} selinuxmode=${SELINUX} package=${cversion}"
 
   if [ $? -eq 0 ]; then
