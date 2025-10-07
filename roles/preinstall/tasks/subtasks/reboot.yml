@@ -3,7 +3,7 @@
   reboot:
     msg: "Reboot for changes to take effect initiated by Ansible"
     post_reboot_delay: 10
-    reboot_timeout: 600
+    reboot_timeout: 1200
   register: reboot_result
   failed_when:
     - reboot_result is failed
