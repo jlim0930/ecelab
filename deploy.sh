@@ -688,6 +688,19 @@ resource "google_compute_disk" "data_disk" {
   size  = 150
 }
 
+resource "google_compute_firewall" "custom_rule" {
+  name    = "support-lab-us-ecelab-rules-allow-external-inbound-${USERNAME}"
+  network = "projects/elastic-support/global/networks/support-lab-vpc-us"
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22", "80", "443", "636", "5000", "5601", "8080", "8081", "9200", "9243", "9300", "9343", "9900", "12300", "12343", "12400", "12443", "22400", "22443" ]
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+  target_tags   = ["ecelab"]
+}
+
 resource "google_compute_instance" "vm_instance" {
   labels = {
     division = "support"
@@ -700,6 +713,7 @@ resource "google_compute_instance" "vm_instance" {
   name         = "${USERNAME}-ecelab-\${count.index + 1}"
   machine_type = "${TYPE}"
   zone         = random_shuffle.zone_selection.result[count.index]
+  tags         = ["ecelab"]
 
   boot_disk {
     initialize_params {
