@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# description
+# automate install ECE small or medium deployment onto gcp instances
+# depending on the ECE version selected, you will have different OS options.
+# Some OS options are limited due to limiation on GCP
+#
+
 ### load vars - Please edit vars file and customize it.
 unset installtype
 unset version
