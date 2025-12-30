@@ -9,10 +9,11 @@
 unset installtype
 unset version
 unset os
-source vars
+# shellcheck source=vars
+source "vars"
 
 ### set username
-USERNAME="$(whoami | tr -cd '[:alnum:]\t')"
+USERNAME=$(whoami | tr -cd '[:alnum:]\t')
 
 ### colors
 red=$(tput setaf 1)
@@ -21,9 +22,8 @@ blue=$(tput setaf 14)
 reset=$(tput sgr0)
 
 ### clean from previous runs
-for file in ecelab.log eceinfo.txt terraform.log terraform_debug.log
-do
-  [ -f "$file" ] && truncate -s 0 "$file"
+for file in ecelab.log eceinfo.txt terraform.log terraform_debug.log; do
+  [[ -f "$file" ]] && truncate -s 0 "$file"
 done
 
 ### debug mode
@@ -65,8 +65,8 @@ debugr() {
 
 # find
 find_instances() {
-  instance_count=$(gcloud compute instances list --project "${PROJECT_ID}" --filter="name:${USERNAME}-ecelab" --format="value(name)" -q| wc -l)
-  if [ "$instance_count" -gt 0 ]; then
+  instance_count=$(gcloud compute instances list --project "${PROJECT_ID}" --filter="name:${USERNAME}-ecelab" --format="value(name)" -q | wc -l)
+  if [[ "$instance_count" -gt 0 ]]; then
     # Group all output commands and pipe them to tee
     # tee will write to eceinfo.txt AND display on the screen
     {
@@ -106,7 +106,7 @@ check_for_updates
 
 # Ensure PROJECT_ID is set
 check_project_id() {
-  if [ -z "${PROJECT_ID}" ]; then
+  if [[ -z "${PROJECT_ID}" ]]; then
     debugr "${blue}PROJECT_ID${reset} is not set in ${blue}vars${reset}. Please configure it first."
     exit 1
   fi
@@ -196,7 +196,7 @@ check_command "jq" "jq is not installed."
 KEY_FILE=$(grep '^private_key_file' ansible.cfg | awk -F '=' '{print $2}' | xargs)
 KEY_FILE=$(eval echo "$KEY_FILE")
 
-if [ ! -f "$KEY_FILE" ]; then
+if [[ ! -f "$KEY_FILE" ]]; then
   debugr "The file ${blue}$KEY_FILE${reset} does not exist. Please update ${blue}private_key_file${reset} in ${blue}ansible.cfg${reset} to ensure that the correct private key is specified."
   exit 1
 fi
@@ -221,7 +221,7 @@ original_columns=$COLUMNS
 COLUMNS=1
 
 # Prompt for installation type
-if [ -z $PRESELECTED_installtype ]; then
+if [[ -z "${PRESELECTED_installtype}" ]]; then
   debug "Select the size:"
   select installtype in "single" "small"; do
     case $installtype in
@@ -237,7 +237,7 @@ else
 fi
 
 # Prompt for ECE Version selection
-if [ -z $PRESELECTED_version ]; then
+if [[ -z "${PRESELECTED_version}" ]]; then
   debug "Select the ECE Version:"
   select version in "3.3.0" "3.4.0" "3.4.1" "3.5.0" "3.5.1" "3.6.0" "3.6.1" "3.6.2" "3.7.1" "3.7.2" "3.7.3" "3.8.0" "3.8.1" "3.8.2" "3.8.3" "4.0.0" "4.0.1" "4.0.2" "4.0.3"; do
     case $version in
@@ -280,7 +280,7 @@ select_os_and_container() {
       cversion="4"
       DISK2="sdb"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "n1-highmem-8" || echo "n1-standard-8")
       ;;
     "Rocky 8 - Podman - x86_64 - selinux")
       image="rocky-linux-cloud/rocky-linux-8-optimized-gcp"
@@ -288,7 +288,7 @@ select_os_and_container() {
       cversion="4"
       DISK2="sdb"
       SELINUX="selinux"
-      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "n1-highmem-8" || echo "n1-standard-8")
       ;;
     "Rocky 8 - Podman - arm64")
       image="rocky-linux-cloud/rocky-linux-8-optimized-gcp-arm64"
@@ -296,7 +296,7 @@ select_os_and_container() {
       cversion="4"
       DISK2="nvme0n2"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "t2a-standard-16" || echo "t2a-standard-8")
       ;;
     "Rocky 8 - Podman - arm64 - selinux")
       image="rocky-linux-cloud/rocky-linux-8-optimized-gcp-arm64"
@@ -304,7 +304,7 @@ select_os_and_container() {
       cversion="5"
       DISK2="nvme0n2"
       SELINUX="selinux"
-      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "t2a-standard-16" || echo "t2a-standard-8")
       ;;
     "Rocky 9 - Podman - x86_64")
       image="rocky-linux-cloud/rocky-linux-9-optimized-gcp"
@@ -312,7 +312,7 @@ select_os_and_container() {
       cversion="5"
       DISK2="sdb"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "n1-highmem-8" || echo "n1-standard-8")
       ;;
     "Rocky 9 - Podman - x86_64 - selinux")
       image="rocky-linux-cloud/rocky-linux-9-optimized-gcp"
@@ -320,7 +320,7 @@ select_os_and_container() {
       cversion="5"
       DISK2="sdb"
       SELINUX="selinux"
-      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "n1-highmem-8" || echo "n1-standard-8")
       ;;
     "Rocky 9 - Podman - arm64")
       image="rocky-linux-cloud/rocky-linux-9-optimized-gcp-arm64"
@@ -328,7 +328,7 @@ select_os_and_container() {
       cversion="5"
       DISK2="nvme0n2"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "t2a-standard-16" || echo "t2a-standard-8")
       ;;
     "Rocky 9 - Podman - arm64 - selinux")
       image="rocky-linux-cloud/rocky-linux-9-optimized-gcp-arm64"
@@ -336,7 +336,7 @@ select_os_and_container() {
       cversion="5"
       DISK2="nvme0n2"
       SELINUX="selinux"
-      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "t2a-standard-16" || echo "t2a-standard-8")
       ;;
     "Ubuntu 20.04 - Docker 24.0 - x86_64")
       image="ubuntu-os-cloud/ubuntu-minimal-2004-lts"
@@ -344,7 +344,7 @@ select_os_and_container() {
       cversion="24.0"
       DISK2="sdb"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "n1-highmem-8" || echo "n1-standard-8")
       ;;
     "Ubuntu 20.04 - Docker 24.0 - arm64")
       image="ubuntu-os-cloud/ubuntu-minimal-2004-lts-arm64"
@@ -352,7 +352,7 @@ select_os_and_container() {
       cversion="24.0"
       DISK2="nvme0n2"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "t2a-standard-16" || echo "t2a-standard-8")
       ;;
     "Rocky 8 - Docker 20.10 - x86_64")
       image="rocky-linux-cloud/rocky-linux-8-optimized-gcp"
@@ -360,7 +360,7 @@ select_os_and_container() {
       cversion="20.10"
       DISK2="sdb"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "n1-highmem-8" || echo "n1-standard-8")
       ;;
     "Rocky 8 - Docker 20.10 - arm64")
       image="rocky-linux-cloud/rocky-linux-8-optimized-gcp-arm64"
@@ -368,7 +368,7 @@ select_os_and_container() {
       cversion="20.10"
       DISK2="nvme0n2"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "t2a-standard-16" || echo "t2a-standard-8")
       ;;
     "Ubuntu 20.04 - Docker 20.10 - x86_64")
       image="ubuntu-os-cloud/ubuntu-minimal-2004-lts"
@@ -376,7 +376,7 @@ select_os_and_container() {
       cversion="20.10"
       DISK2="sdb"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "n1-highmem-8" || echo "n1-standard-8")
       ;;
     "Ubuntu 20.04 - Docker 20.10 - arm64")
       image="ubuntu-os-cloud/ubuntu-minimal-2004-lts-arm64"
@@ -384,7 +384,7 @@ select_os_and_container() {
       cversion="20.10"
       DISK2="nvme0n2"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "t2a-standard-16" || echo "t2a-standard-8")
       ;;
     "Ubuntu 20.04 - Docker 24.0 - x86_64")
       image="ubuntu-os-cloud/ubuntu-minimal-2004-lts"
@@ -392,7 +392,7 @@ select_os_and_container() {
       cversion="24.0"
       DISK2="sdb"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "n1-highmem-8" || echo "n1-standard-8")
       ;;
     "Ubuntu 20.04 - Docker 24.0 - arm64")
       image="ubuntu-os-cloud/ubuntu-minimal-2004-lts-arm64"
@@ -400,7 +400,7 @@ select_os_and_container() {
       cversion="24.0"
       DISK2="nvme0n2"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "t2a-standard-16" || echo "t2a-standard-8")
       ;;
     "Ubuntu 20.04 - Docker 25.0 - x86_64")
       image="ubuntu-os-cloud/ubuntu-minimal-2004-lts"
@@ -408,7 +408,7 @@ select_os_and_container() {
       cversion="25.0"
       DISK2="sdb"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "n1-highmem-8" || echo "n1-standard-8")
       ;;
     "Ubuntu 20.04 - Docker 25.0 - arm64")
       image="ubuntu-os-cloud/ubuntu-minimal-2004-lts-arm64"
@@ -416,7 +416,7 @@ select_os_and_container() {
       cversion="25.0"
       DISK2="nvme0n2"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "t2a-standard-16" || echo "t2a-standard-8")
       ;;
     "Ubuntu 20.04 - Docker 26.0 - x86_64")
       image="ubuntu-os-cloud/ubuntu-minimal-2004-lts"
@@ -424,7 +424,7 @@ select_os_and_container() {
       cversion="26.0"
       DISK2="sdb"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "n1-highmem-8" || echo "n1-standard-8")
       ;;
     "Ubuntu 20.04 - Docker 26.0 - arm64")
       image="ubuntu-os-cloud/ubuntu-minimal-2004-lts-arm64"
@@ -432,7 +432,7 @@ select_os_and_container() {
       cversion="26.0"
       DISK2="nvme0n2"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "t2a-standard-16" || echo "t2a-standard-8")
       ;;
     "Ubuntu 20.04 - Docker 27.0 - x86_64")
       image="ubuntu-os-cloud/ubuntu-minimal-2004-lts"
@@ -440,7 +440,7 @@ select_os_and_container() {
       cversion="27.0"
       DISK2="sdb"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "n1-highmem-8" || echo "n1-standard-8")
       ;;
     "Ubuntu 20.04 - Docker 27.0 - arm64")
       image="ubuntu-os-cloud/ubuntu-minimal-2004-lts-arm64"
@@ -448,7 +448,7 @@ select_os_and_container() {
       cversion="27.0"
       DISK2="nvme0n2"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "t2a-standard-16" || echo "t2a-standard-8")
       ;;
     "Ubuntu 22.04 - Docker 24.0 - x86_64")
       image="ubuntu-os-cloud/ubuntu-minimal-2204-lts"
@@ -456,7 +456,7 @@ select_os_and_container() {
       cversion="24.0"
       DISK2="sdb"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "n1-highmem-8" || echo "n1-standard-8")
       ;;
     "Ubuntu 22.04 - Docker 24.0 - arm64")
       image="ubuntu-os-cloud/ubuntu-minimal-2204-lts-arm64"
@@ -464,7 +464,7 @@ select_os_and_container() {
       cversion="24.0"
       DISK2="nvme0n2"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "t2a-standard-16" || echo "t2a-standard-8")
       ;;
     "Ubuntu 22.04 - Docker 25.0 - x86_64")
       image="ubuntu-os-cloud/ubuntu-minimal-2204-lts"
@@ -472,7 +472,7 @@ select_os_and_container() {
       cversion="25.0"
       DISK2="sdb"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "n1-highmem-8" || echo "n1-standard-8")
       ;;
     "Ubuntu 22.04 - Docker 25.0 - arm64")
       image="ubuntu-os-cloud/ubuntu-minimal-2204-lts-arm64"
@@ -480,7 +480,7 @@ select_os_and_container() {
       cversion="25.0"
       DISK2="nvme0n2"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "t2a-standard-16" || echo "t2a-standard-8")
       ;;
     "Ubuntu 22.04 - Docker 26.0 - x86_64")
       image="ubuntu-os-cloud/ubuntu-minimal-2204-lts"
@@ -488,7 +488,7 @@ select_os_and_container() {
       cversion="26.0"
       DISK2="sdb"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "n1-highmem-8" || echo "n1-standard-8")
       ;;
     "Ubuntu 22.04 - Docker 26.0 - arm64")
       image="ubuntu-os-cloud/ubuntu-minimal-2204-lts-arm64"
@@ -496,7 +496,7 @@ select_os_and_container() {
       cversion="26.0"
       DISK2="nvme0n2"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "t2a-standard-16" || echo "t2a-standard-8")
       ;;
     "Ubuntu 22.04 - Docker 27.0 - x86_64")
       image="ubuntu-os-cloud/ubuntu-minimal-2204-lts"
@@ -504,7 +504,7 @@ select_os_and_container() {
       cversion="27.0"
       DISK2="sdb"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "n1-highmem-8" || echo "n1-standard-8")
       ;;
     "Ubuntu 22.04 - Docker 27.0 - arm64")
       image="ubuntu-os-cloud/ubuntu-minimal-2204-lts-arm64"
@@ -512,7 +512,7 @@ select_os_and_container() {
       cversion="27.0"
       DISK2="nvme0n2"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "t2a-standard-16" || echo "t2a-standard-8")
       ;;
     "Ubuntu 24.04 - Docker 26.0 - x86_64")
       image="ubuntu-os-cloud/ubuntu-minimal-2404-lts"
@@ -520,7 +520,7 @@ select_os_and_container() {
       cversion="26.0"
       DISK2="sdb"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "n1-highmem-8" || echo "n1-standard-8")
       ;;
     "Ubuntu 24.04 - Docker 26.0 - arm64")
       image="ubuntu-os-cloud/ubuntu-minimal-2404-lts-arm64"
@@ -528,7 +528,7 @@ select_os_and_container() {
       cversion="26.0"
       DISK2="nvme0n2"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "t2a-standard-16" || echo "t2a-standard-8")
       ;;
     "Ubuntu 24.04 - Docker 27.0 - x86_64")
       image="ubuntu-os-cloud/ubuntu-minimal-2404-lts"
@@ -536,7 +536,7 @@ select_os_and_container() {
       cversion="27.0"
       DISK2="sdb"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "n1-highmem-8" || echo "n1-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "n1-highmem-8" || echo "n1-standard-8")
       ;;
     "Ubuntu 24.04 - Docker 27.0 - arm64")
       image="ubuntu-os-cloud/ubuntu-minimal-2404-lts-arm64"
@@ -544,7 +544,7 @@ select_os_and_container() {
       cversion="27.0"
       DISK2="nvme0n2"
       SELINUX="none"
-      TYPE=$([ "$installtype" == "single" ] && echo "t2a-standard-16" || echo "t2a-standard-8")
+      TYPE=$([[ "$installtype" == "single" ]] && echo "t2a-standard-16" || echo "t2a-standard-8")
       ;;
     *)
       debugr "Invalid option. Please try again."
@@ -563,7 +563,7 @@ declare -a os_options
 version_num=$(checkversion "$version")
 
 # Now, select the correct list of options based on the version.
-if [ "$version_num" -ge "$(checkversion '4.0.0')" ]; then
+if [[ "$version_num" -ge "$(checkversion '4.0.0')" ]]; then
   os_options=(
     "Rocky 8 - Podman - x86_64"
     "Rocky 8 - Podman - x86_64 - selinux"
@@ -584,7 +584,7 @@ if [ "$version_num" -ge "$(checkversion '4.0.0')" ]; then
     "Ubuntu 24.04 - Docker 27.0 - x86_64"
     "Ubuntu 24.04 - Docker 27.0 - arm64"
   )
-elif [ "$version_num" -ge "$(checkversion '3.8.0')" ]; then
+elif [[ "$version_num" -ge "$(checkversion '3.8.0')" ]]; then
   os_options=(
     "Rocky 8 - Podman - x86_64"
     "Rocky 8 - Podman - x86_64 - selinux"
@@ -599,7 +599,7 @@ elif [ "$version_num" -ge "$(checkversion '3.8.0')" ]; then
     "Ubuntu 22.04 - Docker 25.0 - x86_64"
     "Ubuntu 22.04 - Docker 25.0 - arm64"
   )
-elif [ "$version_num" -ge "$(checkversion '3.7.0')" ]; then
+elif [[ "$version_num" -ge "$(checkversion '3.7.0')" ]]; then
   os_options=(
     "Rocky 8 - Podman - x86_64"
     "Rocky 8 - Podman - x86_64 - selinux"
@@ -638,13 +638,13 @@ setup_terraform() {
   ZONES=$(gcloud compute zones list --filter="region:(${REGION})" --format="value(name)" -q)
   VALID_ZONES=()
 
-  for ZONE in $ZONES; do
-    if [ "$ZONE" != "us-central1-a" ]; then
+  while IFS= read -r ZONE; do
+    if [[ "$ZONE" != "us-central1-a" ]]; then
       if gcloud compute machine-types describe "${TYPE}" --zone "$ZONE" -q &>/dev/null; then
         VALID_ZONES+=("$ZONE")
       fi
     fi
-  done
+  done <<< "$ZONES"
 
   # Create a comma-separated list of valid zones for use in Terraform
   VALID_ZONES_STRING=$(printf ",\"%s\"" "${VALID_ZONES[@]}")
@@ -655,8 +655,8 @@ setup_terraform() {
 
   debug "Creating Terraform configuration files..."
 
-  unset count
-  if [ "${installtype}" == "small" ]; then
+  local count
+  if [[ "${installtype}" == "small" ]]; then
     count=3
   else
     count=1
@@ -756,8 +756,7 @@ EOL
 
   # Initialize Terraform
   debug "Initializing Terraform..."
-  run_cmd terraform init >/dev/null
-  if [ $? -ne 0 ]; then
+  if ! run_cmd terraform init >/dev/null; then
     debugr "Terraform initialization failed. Exiting."
     exit 1
   fi
@@ -765,8 +764,7 @@ EOL
   # Apply Terraform configuration
   debug "Applying Terraform configuration..."
   # run_cmd terraform apply -auto-approve >/dev/null
-  terraform apply -auto-approve -no-color > terraform.log 2>&1
-  if [ $? -ne 0 ]; then
+  if ! terraform apply -auto-approve -no-color > terraform.log 2>&1; then
     debugr "Terraform apply failed. Exiting.  Look in terraform.log for errors"
     exit 1
   fi
@@ -814,7 +812,7 @@ EOL
   done
 
   # If single instance, add empty groups for secondary and tertiary
-  if [ $length = 1 ]; then
+  if [[ $length -eq 1 ]]; then
     cat <<EOL >> inventory.yml
     secondary:
       hosts: {}  # Empty group for secondary
@@ -857,7 +855,7 @@ EOL
 
   # Retrieve the private key file path
   private_key_file=$(get_private_key_file)
-  if [ -z "$private_key_file" ]; then
+  if [[ -z "$private_key_file" ]]; then
     debugr "Error: ${blue}private_key_file${reset} not found in ansible.cfg"
     exit 1
   fi
@@ -877,9 +875,7 @@ setup_ansible
 run_ansible_playbooks() {
   debug "Running ansible scripts"
   sleep 10
-  ansible-playbook -i inventory.yml combined.yml --extra-vars "crt=${container} ece_version=${version} selinuxmode=${SELINUX} package=${cversion}"
-
-  if [ $? -eq 0 ]; then
+  if ansible-playbook -i inventory.yml combined.yml --extra-vars "crt=${container} ece_version=${version} selinuxmode=${SELINUX} package=${cversion}"; then
     echo ""
     debug "And we are done! The URL and the password are listed above."
     debug "Installed ECE: ${blue}${version}${reset} on ${blue}${os}${reset}"
