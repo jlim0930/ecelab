@@ -35,8 +35,8 @@ podman_version_map:
   "5":
     name: 'podman'
     package:
-      - podman-5.4.*
-      - podman-remote-5.4.*
+      - podman-5.*
+      - podman-remote-5.*
       
 
       
