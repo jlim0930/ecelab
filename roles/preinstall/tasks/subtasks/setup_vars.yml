@@ -1,0 +1,33 @@
+---
+- name: "[preinstall] Include OS specific vars"
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - os_{{ ansible_distribution }}_{{ ansible_distribution_major_version }}.yml
+    - unsupported.yml
+  register: os_vars_included
+  failed_when:
+    - os_vars_included.failed
+    - os_vars_included.matched == 0
+
+- name: "[preinstall] Ensure OS is supported"
+  ansible.builtin.fail:
+    msg: "ERROR: OS {{ ansible_distribution }} {{ ansible_distribution_major_version }} is not supported!"
+  when: os_specific_vars.unsupported_version is defined and os_specific_vars.unsupported_version
+
+- name: "[preinstall] Set docker_version or podman_version based on crt"
+  ansible.builtin.set_fact:
+    docker_version: "{{ package if crt == 'docker' }}"
+    podman_version: "{{ package if crt == 'podman' }}"
+
+- name: "[preinstall] Assert Docker version is supported"
+  ansible.builtin.assert:
+    that:
+      - "docker_version in docker_version_map.keys()"
+    msg: "Docker version must be one of {{ docker_version_map.keys() }}"
+  when: crt == "docker"
+
+- name: "[preinstall] Assert Podman version is supported"
+  ansible.builtin.assert:
+    that: "podman_version in podman_version_map.keys()"
+    msg: "Podman version must be one of {{ podman_version_map.keys() }}"
+  when: crt == "podman"

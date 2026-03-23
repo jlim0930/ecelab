@@ -1,0 +1,8 @@
+---
+- name: Reload sysctl
+  listen: "Reload sysctl"
+  ansible.builtin.command: sysctl -p
+
+- name: Reload systemd
+  listen: "Reload systemd"
+  ansible.builtin.command: systemctl daemon-reload

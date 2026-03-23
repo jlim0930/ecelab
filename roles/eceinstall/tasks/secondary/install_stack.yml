@@ -1,0 +1,43 @@
+---
+- name: "[eceinstall] Set default ece role if not defined"
+  ansible.builtin.set_fact:
+    ece_roles: [director, coordinator, proxy, allocator]
+  when: ece_roles is undefined
+
+- name: "[eceinstall] Get the roles token"
+  ansible.builtin.uri:
+    url: "https://{{ primary_hostname }}:12443/api/v1/platform/configuration/security/enrollment-tokens"
+    method: POST
+    user: admin
+    password: "{{ adminconsole_root_password }}"
+    force_basic_auth: true
+    return_content: true
+    validate_certs: false
+    headers:
+      Content-Type: "application/json"
+    body_format: json
+    body: '{"persistent": false, "roles": {{ ece_roles }}}'
+  register: roles_token
+
+- name: "[eceinstall] Execute installation"
+  ansible.builtin.shell:
+    cmd: >
+      /home/elastic/elastic-cloud-enterprise.sh
+      --coordinator-host {{ primary_int_address }}
+      --roles-token '{{ roles_token.json.token }}'
+      --roles '{{ ece_roles | join(',') }}'
+      --availability-zone {{ availability_zone }}
+      --cloud-enterprise-version {{ ece_version }}
+      --docker-registry {{ ece_docker_registry }}
+      --ece-docker-repository {{ ece_docker_repository }}
+      --host-storage-path {{ data_dir }}/elastic
+      --memory-settings '{{ memory_settings }}'
+      --runner-id {{ ece_runner_id }}{% if capacity is defined %}
+      --capacity {{ capacity }}{% endif %}
+      {{ "--podman" if crt == "podman" else "" }}
+      {{ "--selinux" if selinuxmode == "selinux" else "" }}
+      {{ extra_installer_args }}
+  become: true
+  become_method: sudo
+  become_user: elastic
+  register: installation

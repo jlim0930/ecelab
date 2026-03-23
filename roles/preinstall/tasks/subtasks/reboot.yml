@@ -1,0 +1,6 @@
+---
+- name: "[preinstall] Reboot the machine with all defaults"
+  ansible.builtin.reboot:
+    msg: "Reboot for changes to take effect initiated by Ansible"
+    post_reboot_delay: 10
+    reboot_timeout: 1200

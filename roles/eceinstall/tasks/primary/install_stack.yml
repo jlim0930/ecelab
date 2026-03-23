@@ -1,0 +1,74 @@
+---
+- name: "[eceinstall] Remove stale bootstrap-secrets.json from any previous attempt"
+  ansible.builtin.file:
+    path: "{{ data_dir }}/elastic/bootstrap-state/bootstrap-secrets.json"
+    state: absent
+
+- name: "[eceinstall] Execute the primary installation - this step takes a WHILE! sit back and enjoy"
+  ansible.builtin.shell:
+    cmd: >
+      /home/elastic/elastic-cloud-enterprise.sh
+      install
+      --availability-zone {{ availability_zone }}
+      --cloud-enterprise-version {{ ece_version }}
+      --docker-registry {{ ece_docker_registry }}
+      --ece-docker-repository {{ ece_docker_repository }}
+      --memory-settings '{{ memory_settings }}'
+      --runner-id {{ ece_runner_id }}
+      --host-storage-path {{ data_dir }}/elastic
+      {{ "--podman" if crt == "podman" else "" }}
+      {{ "--selinux" if selinuxmode == "selinux" else "" }}
+      {{ extra_installer_args }}
+  become: true
+  become_method: sudo
+  become_user: elastic
+  async: 3600
+  poll: 0
+  register: ece_install_job
+
+- name: "[eceinstall] Wait for primary installation to complete"
+  ansible.builtin.async_status:
+    jid: "{{ ece_install_job.ansible_job_id }}"
+  become: true
+  become_method: sudo
+  become_user: elastic
+  register: ece_install_result
+  until: ece_install_result.finished | bool
+  retries: 120
+  delay: 30
+
+- name: "[eceinstall] Fail if installer exited with error"
+  ansible.builtin.fail:
+    msg: >
+      ECE primary installation failed with rc={{ ece_install_result.rc | default('unknown') }}.
+      Check {{ data_dir }}/elastic/logs/bootstrap-logs/bootstrap.log for details.
+  when: ece_install_result.rc | default(0) != 0
+
+- name: "[eceinstall] Verify bootstrap secrets exist"
+  ansible.builtin.stat:
+    path: "{{ data_dir }}/elastic/bootstrap-state/bootstrap-secrets.json"
+  register: secrets_file
+  failed_when: not secrets_file.stat.exists
+
+- name: "[eceinstall] Read the bootstrap secrets"
+  ansible.builtin.command:
+    cmd: cat {{ data_dir }}/elastic/bootstrap-state/bootstrap-secrets.json
+  register: secrets
+
+- name: "[eceinstall] Fetch the bootstrap secrets"
+  ansible.builtin.fetch:
+    src: "{{ data_dir }}/elastic/bootstrap-state/bootstrap-secrets.json"
+    dest: bootstrap-secrets.local.json
+    flat: true
+
+- name: "[eceinstall] Parse bootstrap secrets"
+  ansible.builtin.set_fact:
+    install_secrets: "{{ secrets.stdout | from_json }}"
+
+- name: "[eceinstall] Set adminconsole root password"
+  ansible.builtin.set_fact:
+    adminconsole_root_password: "{{ install_secrets.adminconsole_root_password }}"
+
+- name: "[eceinstall] Set primary hostname"
+  ansible.builtin.set_fact:
+    primary_hostname: "{{ inventory_hostname }}"

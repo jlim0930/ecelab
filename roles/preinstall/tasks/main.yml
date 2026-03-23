@@ -1,0 +1,105 @@
+---
+# --- Phase 1: Variables and OS baseline ---
+- name: "[preinstall] Setup variables"
+  ansible.builtin.include_tasks: "subtasks/setup_vars.yml"
+
+- name: "[preinstall] Configure OS specific tasks"
+  ansible.builtin.include_tasks: "{{ ansible_distribution }}-{{ ansible_distribution_major_version}}/configure_os.yml"
+
+# --- Phase 2: Async package installs (run in background) ---
+- name: "[preinstall] Install container runtime (async)"
+  ansible.builtin.include_tasks: "{{ ansible_distribution }}-{{ ansible_distribution_major_version }}/install_{{ crt }}.yml"
+  when: crt in ['docker', 'podman']
+
+# --- Phase 3: User, kernel, and system config (while CRT installs) ---
+- name: "[preinstall] Create elastic user"
+  ansible.builtin.include_tasks: "subtasks/create_elastic_user.yml"
+
+- name: "[preinstall] Configure kernel modules"
+  ansible.builtin.include_tasks: "subtasks/configure_kernel_modules.yml"
+
+- name: "[preinstall] Configure sysctl"
+  ansible.builtin.include_tasks: "subtasks/configure_sysctl.yml"
+
+- name: "[preinstall] Configure limits"
+  ansible.builtin.include_tasks: "subtasks/configure_limits.yml"
+
+- name: "[preinstall] Update GRUB"
+  ansible.builtin.include_tasks: "subtasks/update_grub.yml"
+
+- name: "[preinstall] Configure filesystem"
+  ansible.builtin.include_tasks: "subtasks/configure_filesystem.yml"
+
+# --- Phase 4: Wait for CRT, then configure it ---
+- name: "[preinstall] Wait for CRT install to finish"
+  ansible.builtin.async_status:
+    jid: "{{ crt_installed.ansible_job_id }}"
+  register: async_result
+  until: async_result.finished | bool
+  failed_when: async_result.failed | default(false)
+  retries: 60
+  delay: 15
+
+- name: "[preinstall] Pin Docker packages to prevent unintended upgrades"
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop:
+    - docker-ce
+    - docker-ce-cli
+    - containerd.io
+  when:
+    - crt == 'docker'
+    - ansible_os_family == 'Debian'
+
+- name: "[preinstall] Configure container runtime"
+  ansible.builtin.include_tasks: "subtasks/configure_{{ crt }}.yml"
+  when: crt in ['docker', 'podman']
+
+# --- Phase 5: Pre-pull ECE image and download installer (while CRT is running) ---
+- name: "[preinstall] Pre-download ECE installer script"
+  ansible.builtin.get_url:
+    url: "{{ ece_installer_url }}"
+    dest: /home/elastic/elastic-cloud-enterprise.sh
+    mode: '0755'
+    owner: elastic
+    group: elastic
+  async: 120
+  poll: 0
+  register: ece_installer_download
+  when: ece_installer_path is not defined
+
+- name: "[preinstall] Pre-pull ECE Docker image on all nodes"
+  ansible.builtin.shell:
+    cmd: >
+      {{ 'docker' if crt == 'docker' else 'podman' }} pull
+      {{ ece_docker_registry }}/{{ ece_docker_repository }}/elastic-cloud-enterprise:{{ ece_version }}
+  async: 600
+  poll: 0
+  register: ece_image_prepull
+
+- name: "[preinstall] Wait for ECE installer download to complete"
+  ansible.builtin.async_status:
+    jid: "{{ ece_installer_download.ansible_job_id }}"
+  register: installer_dl_result
+  until: installer_dl_result.finished | bool
+  retries: 30
+  delay: 10
+  when: ece_installer_download is not skipped
+
+- name: "[preinstall] Wait for ECE image pre-pull to complete"
+  ansible.builtin.async_status:
+    jid: "{{ ece_image_prepull.ansible_job_id }}"
+  register: image_pull_result
+  until: image_pull_result.finished | bool
+  retries: 60
+  delay: 15
+  failed_when: false
+
+- name: "[preinstall] Log image pre-pull result"
+  ansible.builtin.debug:
+    msg: "{{ 'ECE image pre-pulled successfully' if not (image_pull_result.failed | default(false)) else 'ECE image pre-pull failed (will be pulled during install)' }}"
+
+# --- Phase 6: Reboot ---
+- name: "[preinstall] Reboot"
+  ansible.builtin.include_tasks: "subtasks/reboot.yml"

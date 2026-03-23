@@ -1,0 +1,61 @@
+---
+- name: "[preinstall] Update dnf cache on Red Hat family systems"
+  ansible.builtin.dnf:
+    update_cache: true
+  when: ansible_os_family == "RedHat"
+
+- name: "[preinstall] Remove nscd package"
+  ansible.builtin.package:
+    name: nscd
+    state: absent
+  register: remove_packages
+  retries: 10
+  delay: 5
+  until: remove_packages is succeeded
+  ignore_errors: true
+
+- name: "[preinstall] Install required system packages"
+  ansible.builtin.package:
+    name:
+      - cloud-init
+      - lvm2
+      - mdadm
+      - iptables
+      - dnf-plugins-core
+      - python3-dnf-plugin-versionlock
+    state: present
+    update_cache: true
+  register: install_packages
+  retries: 3
+  delay: 10
+  until: install_packages is succeeded
+  ignore_errors: true
+
+- name: "[preinstall] Configure SELinux state"
+  ansible.builtin.selinux:
+    state: "{{ 'enforcing' if selinuxmode == 'selinux' else 'disabled' }}"
+    policy: "{{ 'targeted' if selinuxmode == 'selinux' else omit }}"
+  when: selinuxmode in ['selinux', 'none']
+  register: selinux_status
+
+- name: "[preinstall] Verify that fs.may_detach_mounts is enabled"
+  ansible.builtin.lineinfile:
+    path: /etc/sysctl.conf
+    regexp: '^fs.may_detach_mounts'
+    line: 'fs.may_detach_mounts = 1'
+    create: true
+
+- name: "[preinstall] Disable firewalld"
+  ansible.builtin.systemd_service:
+    name: firewalld
+    state: stopped
+    enabled: false
+  ignore_errors: true
+
+- name: "[preinstall] Replace NAME in /etc/os-release based on container runtime"
+  ansible.builtin.lineinfile:
+    path: /etc/os-release
+    regexp: '^NAME="Rocky Linux"$'
+    line: "{{ 'NAME=\"CentOS Linux\"' if crt == 'docker' else 'NAME=\"Red Hat Enterprise\"' }}"
+  when:
+    - ece_version is version('3.7.0', '<')

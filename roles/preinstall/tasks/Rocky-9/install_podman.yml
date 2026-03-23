@@ -1,0 +1,24 @@
+---
+- name: "[preinstall] Install podman (asynchronously)"
+  ansible.builtin.package:
+    name: "{{ podman_version_map[podman_version]['package'] }}"
+    state: present
+  async: 300
+  poll: 0
+  register: crt_installed
+
+- name: "[preinstall] Lock Podman package versions with dnf_versionlock"
+  community.general.dnf_versionlock:
+    name: "{{ podman_version_map[podman_version]['package'] }}"
+    state: present
+  async: 300
+  poll: 0
+  register: lock_podman_versions
+
+- name: "[preinstall] Ensure network_backend is set to 'cni' in containers.conf"
+  ansible.builtin.ini_file:
+    path: /etc/containers/containers.conf
+    section: network
+    option: network_backend
+    value: '"cni"'
+    no_extra_spaces: true

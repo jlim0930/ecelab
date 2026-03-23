@@ -1,0 +1,65 @@
+---
+- name: "[preinstall] Stop the podman service"
+  ansible.builtin.systemd_service:
+    name: podman
+    state: stopped
+
+- name: "[preinstall] Ensure /etc/systemd/system/podman.socket.d directory exists"
+  ansible.builtin.file:
+    path: /etc/systemd/system/podman.socket.d
+    state: directory
+
+- name: "[preinstall] Create podman.conf in service.d"
+  ansible.builtin.template:
+    src: podman.conf.j2
+    dest: /etc/systemd/system/podman.socket.d/podman.conf
+  register: podman_conf_created
+
+- name: "[preinstall] Remove /var/lib/podman if podman.conf was changed"
+  ansible.builtin.file:
+    path: /var/lib/podman
+    state: absent
+    force: true
+  when: podman_conf_created.changed
+
+- name: "[preinstall] Create /usr/bin/docker with podman-remote command"
+  ansible.builtin.copy:
+    dest: /usr/bin/docker
+    content: |
+      #!/bin/bash
+      podman-remote --url unix:///var/run/docker.sock "$@"
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: "[preinstall] Update storage configuration in /etc/containers/storage.conf"
+  ansible.builtin.lineinfile:
+    path: /etc/containers/storage.conf
+    regexp: "^{{ item.key }}\\s*="
+    line: "{{ item.key }} = \"{{ item.value }}\""
+    insertafter: '^\[storage\]'
+    state: present
+    create: true
+  loop:
+    - { key: 'runroot', value: '/mnt/data/docker/runroot/' }
+    - { key: 'graphroot', value: '/mnt/data/docker' }
+
+- name: "[preinstall] Append overlay to /etc/modules-load.d/overlay.conf"
+  ansible.builtin.lineinfile:
+    path: /etc/modules-load.d/overlay.conf
+    line: "overlay"
+    create: true
+
+- name: "[preinstall] Reload systemd"
+  ansible.builtin.command: systemctl daemon-reload
+
+- name: "[preinstall] Ensure Podman services and socket are enabled and started"
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+  loop:
+    - podman
+    - podman-restart.service
+    - podman.socket

@@ -1,0 +1,43 @@
+- name: "[eceinstall] Get bearer token"
+  ansible.builtin.uri:
+    url: "https://{{ ece_runner_id }}:12443/api/v0.1/login"
+    method: POST
+    body:
+      username: "admin"
+      password: "{{ adminconsole_root_password }}"
+    body_format: json
+    validate_certs: false
+  register: bearer
+  retries: 5
+  delay: 5
+  until: bearer is succeeded
+  run_once: true
+
+- name: "[eceinstall] Set Cluster Endpoints"
+  ansible.builtin.uri:
+    url: "https://{{ ece_runner_id }}:12443/api/v0.1/regions/ece-region/config/cname"
+    method: PUT
+    headers:
+      Authorization: "Bearer {{ bearer.json.token }}"
+    body:
+      value: "{{ outside_ip }}.ip.es.io"
+    body_format: json
+    validate_certs: false
+  register: clusterEndpoint
+  retries: 5
+  delay: 5
+  until: clusterEndpoint is succeeded
+  run_once: true
+
+- name: "[eceinstall] Accept EULA"
+  ansible.builtin.uri:
+    url: "https://{{ ece_runner_id }}:12443/api/v0.1/user/eula/_accept"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ bearer.json.token }}"
+    validate_certs: false
+  register: acceptEULA
+  retries: 5
+  delay: 5
+  until: acceptEULA is succeeded
+  run_once: true

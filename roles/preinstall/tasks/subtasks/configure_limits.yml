@@ -1,0 +1,33 @@
+---
+- name: "[preinstall] Create system limits settings file"
+  ansible.builtin.file:
+    path: "{{ system_limits_file }}"
+    state: touch
+
+- name: "[preinstall] Optimize pam limits configuration"
+  vars:
+    pam_limits_to_set:
+      - { domain: '*', limit_type: 'soft', limit_item: 'nofile', value: '1024000' }
+      - { domain: '*', limit_type: 'hard', limit_item: 'nofile', value: '1024000' }
+      - { domain: '*', limit_type: 'soft', limit_item: 'memlock', value: 'unlimited' }
+      - { domain: '*', limit_type: 'hard', limit_item: 'memlock', value: 'unlimited' }
+      - { domain: 'elastic', limit_type: 'soft', limit_item: 'nofile', value: '1024000' }
+      - { domain: 'elastic', limit_type: 'hard', limit_item: 'nofile', value: '1024000' }
+      - { domain: 'elastic', limit_type: 'soft', limit_item: 'memlock', value: 'unlimited' }
+      - { domain: 'elastic', limit_type: 'hard', limit_item: 'memlock', value: 'unlimited' }
+      - { domain: 'root', limit_type: 'soft', limit_item: 'nofile', value: '1024000' }
+      - { domain: 'root', limit_type: 'hard', limit_item: 'nofile', value: '1024000' }
+      - { domain: 'root', limit_type: 'soft', limit_item: 'memlock', value: 'unlimited' }
+  ansible.builtin.blockinfile:
+    dest: "{{ system_limits_file }}"
+    create: true
+    marker: "# {mark} ANSIBLE MANAGED BLOCK FOR PAM LIMITS"
+    block: |
+      {% for item in pam_limits_to_set %}
+      {{ item.domain }} {{ item.limit_type }} {{ item.limit_item }} {{ item.value }}
+      {% endfor %}
+
+- name: "[preinstall] Delete /etc/security/limits.d/20-nproc.conf if exists"
+  ansible.builtin.file:
+    path: /etc/security/limits.d/20-nproc.conf
+    state: absent

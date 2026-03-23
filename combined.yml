@@ -1,0 +1,25 @@
+---
+# Combined playbook for full ECE installation
+# Runs preinstall on all hosts, then primary and secondary/tertiary installations
+
+- name: Preinstall - configure all hosts
+  hosts: all
+  gather_facts: true
+  roles:
+    - preinstall
+
+- name: ECE install - primary node
+  hosts: primary
+  gather_facts: true
+  roles:
+    - eceinstall
+  vars:
+    ece_primary: true
+
+- name: ECE install - secondary and tertiary nodes
+  hosts: secondary:tertiary
+  gather_facts: true
+  roles:
+    - eceinstall
+  vars:
+    ece_roles: [director, coordinator, proxy, allocator]

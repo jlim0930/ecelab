@@ -1,0 +1,9 @@
+---
+# Preinstall playbook for ECE environment preparation
+# Prepares all hosts with necessary system configurations and dependencies
+
+- name: Preinstall - configure all hosts
+  hosts: all
+  gather_facts: true
+  roles:
+    - preinstall

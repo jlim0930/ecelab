@@ -1,0 +1,28 @@
+---
+- name: "[preinstall] Install policycoreutils-python-utils"
+  ansible.builtin.package:
+    name:
+      - policycoreutils-python-utils
+    state: present
+    update_cache: true
+  register: install_policycoreutils
+  retries: 3
+  delay: 10
+  until: install_policycoreutils is succeeded
+  ignore_errors: true
+
+- name: "[preinstall] Install podman (asynchronously)"
+  ansible.builtin.package:
+    name: "{{ podman_version_map[podman_version]['package'] }}"
+    state: present
+  async: 300
+  poll: 0
+  register: crt_installed
+
+- name: "[preinstall] Lock Podman package versions with dnf_versionlock"
+  community.general.dnf_versionlock:
+    name: "{{ podman_version_map[podman_version]['package'] }}"
+    state: present
+  async: 300
+  poll: 0
+  register: lock_podman_versions

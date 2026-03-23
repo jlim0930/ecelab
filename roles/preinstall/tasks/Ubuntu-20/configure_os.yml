@@ -1,0 +1,26 @@
+---
+- name: "[preinstall] Remove nscd package"
+  ansible.builtin.package:
+    name: nscd
+    state: absent
+  register: remove_packages
+  retries: 10
+  delay: 5
+  until: remove_packages is succeeded
+  ignore_errors: true
+
+- name: "[preinstall] Install base dependencies - Debian based"
+  ansible.builtin.apt:
+    name:
+      - cloud-init
+      - xfsprogs
+      - acl
+      - lvm2
+      - gnupg
+    state: present
+    update_cache: true
+  register: install_dependencies
+  retries: 3
+  delay: 10
+  until: install_dependencies is succeeded
+  ignore_errors: true

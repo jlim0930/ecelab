@@ -1,0 +1,40 @@
+---
+- name: "[preinstall] Add docker repository key"
+  ansible.builtin.apt_key:
+    url: "{{ docker_version_map[docker_version]['keys']['server'] }}"
+    id: "{{ docker_version_map[docker_version]['keys']['id'] }}"
+
+- name: "[preinstall] Add docker repository"
+  ansible.builtin.apt_repository:
+    repo: "{{ docker_version_map[docker_version]['repo'] }}"
+    state: present
+
+- name: "[preinstall] Install Docker (asynchronously)"
+  ansible.builtin.package:
+    name: "{{ docker_version_map[docker_version]['package'] }}"
+    state: present
+  async: 300
+  poll: 0
+  register: crt_installed
+
+- name: "[preinstall] Create Docker configuration directory"
+  ansible.builtin.file:
+    path: /etc/docker
+    state: directory
+    mode: '0755'
+
+- name: "[preinstall] Configure Docker daemon ulimits"
+  ansible.builtin.copy:
+    dest: /etc/docker/daemon.json
+    content: |
+      {
+        "default-ulimits": {
+          "nofile": {
+            "Name": "nofile",
+            "Hard": 1024000,
+            "Soft": 1024000
+          }
+        }
+      }
+    mode: '0644'
+

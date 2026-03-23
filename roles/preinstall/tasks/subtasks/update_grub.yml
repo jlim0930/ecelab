@@ -1,0 +1,16 @@
+---
+- name: "[preinstall] Ensure required kernel parameters are present in GRUB"
+  ansible.builtin.lineinfile:
+    path: /etc/default/grub
+    backrefs: true
+    regexp: '^(GRUB_CMDLINE_LINUX=")(?!.*\b{{ item }}\b)(.*)(")$'
+    line: '\1\2 {{ item }}\3'
+  loop:
+    - 'cgroup_enable=memory'
+    - 'swapaccount=1'
+    - 'cgroup.memory=nokmem'
+  register: grub_modify_result
+
+- name: "[preinstall] Run bootloader update if grub config was changed"
+  ansible.builtin.command: "{{ bootloader_update_command }}"
+  when: grub_modify_result.changed

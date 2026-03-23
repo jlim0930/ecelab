@@ -1,0 +1,61 @@
+---
+- name: "[eceinstall] Check if ECE installer was pre-downloaded during preinstall"
+  ansible.builtin.stat:
+    path: /home/elastic/elastic-cloud-enterprise.sh
+  register: ece_installer_stat
+
+- name: "[eceinstall] Copy ece installer from local path"
+  ansible.builtin.copy:
+    src: "{{ ece_installer_path }}"
+    dest: /home/elastic/elastic-cloud-enterprise.sh
+    mode: '0755'
+  when:
+    - ece_installer_path is defined
+    - not ece_installer_stat.stat.exists
+
+- name: "[eceinstall] Download ece installer (if not pre-downloaded)"
+  ansible.builtin.get_url:
+    url: "{{ ece_installer_url }}"
+    dest: /home/elastic/elastic-cloud-enterprise.sh
+    mode: '0755'
+  when:
+    - ece_installer_path is not defined
+    - not ece_installer_stat.stat.exists
+
+- name: "[eceinstall] Ensure ~/.docker is present"
+  ansible.builtin.file:
+    path: /home/elastic/.docker/
+    state: directory
+    owner: elastic
+  when: docker_config != ""
+
+- name: "[eceinstall] Copy local docker config"
+  ansible.builtin.copy:
+    src: "{{ docker_config }}"
+    dest: /home/elastic/.docker/config.json
+    owner: elastic
+  when: docker_config != ""
+
+- name: "[eceinstall] Ensure the container service is started"
+  ansible.builtin.systemd_service:
+    name: "{{ 'docker' if crt == 'docker' else 'podman' }}"
+    state: started
+
+- name: "[eceinstall] Create memory settings"
+  set_fact:
+    memory_settings: ' {"runner":{"xms":"{{memory.runner}}","xmx":"{{memory.runner}}"},"proxy":{"xms":"{{memory.proxy}}","xmx":"{{memory.proxy}}"},"zookeeper":{"xms":"{{memory.zookeeper}}","xmx":"{{memory.zookeeper}}"},"director":{"xms":"{{memory.director}}","xmx":"{{memory.director}}"},"constructor":{"xms":"{{memory.constructor}}","xmx":"{{memory.constructor}}"},"admin-console":{"xms":"{{memory.adminconsole}}","xmx":"{{memory.adminconsole}}"}}'
+
+
+- name: "[eceinstall] Install Elastic Cloud Enterprise"
+  block:
+    - ansible.builtin.include_tasks: primary/main.yml
+      when: ece_primary is defined and ece_primary
+
+    - ansible.builtin.include_tasks: secondary/main.yml
+      when: ece_primary is undefined or not ece_primary
+
+    - ansible.builtin.debug:
+        msg: "Adminconsole is reachable at: https://{{ primary_hostname }}:12443"
+
+    - ansible.builtin.debug:
+        msg: "Adminconsole password is: {{ adminconsole_root_password }}"

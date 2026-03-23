@@ -1,0 +1,18 @@
+---
+- name: "[eceinstall] Get primary hostname"
+  ansible.builtin.set_fact:
+    primary_hostname: "{{ hostvars[groups['primary'][0]].primary_hostname }}"
+  when: primary_hostname is undefined
+
+- name: "[eceinstall] Get adminconsole root password"
+  ansible.builtin.set_fact:
+    adminconsole_root_password: "{{ hostvars[groups['primary'][0]].adminconsole_root_password }}"
+  when: adminconsole_root_password is undefined
+
+- name: "[eceinstall] Get primary internal address"
+  ansible.builtin.set_fact:
+    primary_int_address: "{{ hostvars[groups['primary'][0]].ansible_default_ipv4.address }}"
+  when: primary_int_address is undefined
+
+- name: "[eceinstall] Execute secondary installation"
+  ansible.builtin.include_tasks: install_stack.yml

@@ -1,0 +1,46 @@
+---
+- name: "[preinstall] Define container runtime group based on crt variable"
+  ansible.builtin.set_fact:
+    container_group: "{{ 'docker' if crt == 'docker' else 'podman' }}"
+  when: crt in ['docker', 'podman']
+
+- name: "[preinstall] Ensure required groups exist"
+  ansible.builtin.group:
+    name: "{{ item.name }}"
+    gid: "{{ item.gid | default(omit) }}"
+    state: present
+  loop:
+    - { name: 'elastic', gid: "{{ elastic_gid }}" }
+    - { name: "{{ container_group }}" }
+  when: container_group is defined
+
+- name: "[preinstall] Create elastic user with correct group membership and sudo policy"
+  block:
+    - name: Create user 'elastic' and assign to groups
+      ansible.builtin.user:
+        name: elastic
+        group: elastic
+        groups: "{{ container_group }}"
+        uid: "{{ elastic_uid }}"
+        append: true
+        state: present
+        generate_ssh_key: true
+      when: container_group is defined
+
+    - name: Set NOPASSWD sudo policy for elastic user
+      ansible.builtin.lineinfile:
+        path: /etc/sudoers.d/99-ece-users
+        line: 'elastic ALL=(ALL) NOPASSWD:ALL'
+        state: present
+        create: true
+        owner: root
+        group: root
+        mode: '0440'
+        validate: 'visudo -cf %s'
+
+- name: "[preinstall] Configure boot user"
+  ansible.builtin.template:
+    src: elastic.cfg.j2
+    dest: /etc/cloud/cloud.cfg.d/00-elastic.cfg
+  vars:
+    image_user: elastic

@@ -1,0 +1,19 @@
+---
+- name: "[preinstall] Ensure kernel modules are loaded and persistent"
+  community.general.modprobe:
+    name: "{{ item }}"
+    state: present
+    persistent: present
+  loop:
+    - "{{ conntrack_module }}"
+    - overlay
+
+- name: "[preinstall] Skip automatic ephemeral mount in cloud-init"
+  ansible.builtin.copy:
+    dest: /etc/cloud/cloud.cfg.d/01-mounts.cfg
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      mounts:
+        - [ ephemeral0, null ]
