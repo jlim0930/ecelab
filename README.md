@@ -162,6 +162,8 @@ The script will:
 5. Optionally enable **Debug output**
 6. Click **Deploy**
 
+<img width="1163" height="671" alt="image" src="https://github.com/user-attachments/assets/f1548aee-2a05-4e7d-a710-e2b5f90d3d79" />
+
 The UI shows:
 - **Real-time progress bar** tracking each deployment stage (Prerequisites → Environment → Infrastructure → Connectivity → Installation → Complete)
 - **Colorized log output** streamed live from `deploy.sh`
@@ -175,6 +177,8 @@ After a successful deploy, the UI displays:
 - Admin password with a copy button
 - Instance table with name, public/private IPs, zone, machine type, and status
 - Deployment creation date and auto-delete countdown
+
+<img width="1156" height="707" alt="image" src="https://github.com/user-attachments/assets/abe78cf3-47a7-4729-a98a-1d0040be48b5" />
 
 ### Cleanup via Web UI
 
