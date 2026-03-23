@@ -350,6 +350,13 @@ Edit `MAX_RUN_DAYS` in `vars` before deploying. The auto-termination timer is se
 **Q: What happens when instances auto-terminate?**
 GCP deletes the instances after `MAX_RUN_DAYS`. Terraform state and other local artifacts remain — run `./deploy.sh cleanup` (or click Cleanup in the Web UI) before deploying again.
 
+**Q: I use a custom SSH key, not the default `google_compute_engine` key. How do I configure it?**
+Edit `ansible.cfg` and update the `private_key_file` setting to point to your key:
+```ini
+private_key_file = ~/.ssh/my_custom_key
+```
+Note: SSH keys with passphrases are not supported. The key must be passphrase-free for Ansible to connect non-interactively.
+
 ## Notes
 
 - GCP instances are named `USERNAME-ecelab-{1|2|3}` where USERNAME is your login truncated to 10 characters

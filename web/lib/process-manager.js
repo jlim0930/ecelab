@@ -101,8 +101,8 @@ class ProcessManager extends EventEmitter {
   }
 
   /**
-   * Cancel a running deployment: kill the process, then auto-cleanup.
-   * Returns a promise that resolves when the process is killed (before cleanup starts).
+   * Cancel a running deployment: kill deploy.sh and ALL child processes
+   * (terraform, ansible, ssh, etc.), then resolve so the caller can start cleanup.
    */
   cancelDeploy() {
     return new Promise((resolve) => {
@@ -126,16 +126,25 @@ class ProcessManager extends EventEmitter {
 
       this.once('done', onClose);
 
-      // SIGKILL immediately — Ansible traps SIGTERM and waits for the current
-      // task to finish, which can take minutes. SIGKILL is the only way to
-      // stop everything right away.
+      // Kill the entire process tree: deploy.sh, terraform, ansible, ssh, etc.
+      // 1) SIGKILL the process group (detached: true puts them in one group)
       try {
         process.kill(-pid, 'SIGKILL');
       } catch {
         try { this.process.kill('SIGKILL'); } catch { /* ignore */ }
       }
 
-      // Safety fallback if 'close' event doesn't fire within 2s
+      // 2) Also find and kill any orphaned child processes by parent PID.
+      //    Terraform and Ansible can spawn subprocesses that escape the group.
+      try {
+        const { execSync } = require('child_process');
+        // pkill -9 -P sends SIGKILL to all processes whose parent is `pid`
+        execSync(`pkill -9 -P ${pid} 2>/dev/null; true`, { timeout: 3000 });
+        // Also kill any lingering terraform/ansible-playbook started by this user
+        execSync(`pgrep -f "deploy.sh" | xargs kill -9 2>/dev/null; true`, { timeout: 3000 });
+      } catch { /* best-effort */ }
+
+      // Safety fallback if 'close' event doesn't fire within 3s
       setTimeout(() => {
         if (this.process) {
           this.process = null;
@@ -144,7 +153,7 @@ class ProcessManager extends EventEmitter {
           this.removeListener('done', onClose);
           resolve();
         }
-      }, 2000);
+      }, 3000);
     });
   }
 

@@ -549,6 +549,12 @@ export default function Home() {
               <StepProgress steps={DEPLOY_STEPS} currentStep={currentStep}
                 isError={appState === 'error'} />
             )}
+            {/* Patience hint during ECE installation step */}
+            {appState === 'running' && processMode === 'deploy' && currentStep === 4 && (
+              <div style={{ marginTop: 10, fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
+                ECE installation typically takes 20–40 minutes. Output may pause during long tasks — this is normal. If there are issues, an error will be displayed.
+              </div>
+            )}
           </div>
 
           {/* Log output */}
