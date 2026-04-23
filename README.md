@@ -295,7 +295,7 @@ The Web UI wraps the same `deploy.sh` script — the Node.js server spawns `depl
 ## Troubleshooting
 
 ### Terraform apply fails
-- Check `terraform.log` for detailed error messages
+- The script automatically extracts and displays the Terraform error. You can also check `terraform.log` for the full output.
 - Ensure `gcloud auth application-default login` has been run recently
 - Verify your GCP project has the required APIs enabled (Compute Engine)
 - Run `./deploy.sh cleanup` and try again

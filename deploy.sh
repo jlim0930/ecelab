@@ -74,6 +74,23 @@ log_warn()  { echo "${YELLOW}[WARN]${RESET}  $*"; }
 log_error() { echo "${RED}[ERROR]${RESET} $*" >&2; }
 log_debug() { [[ "${DEBUG:-0}" -eq 1 ]] && echo "${BLUE}[DEBUG]${RESET} $*" || true; }
 
+# --- Extract Terraform Error -------------------------------------------------
+log_terraform_error() {
+  if [[ -f "terraform.log" ]]; then
+    local tf_error
+    tf_error=$(grep -A 20 "^[Ee]rror: " terraform.log | sed 's/^/  /')
+    if [[ -n "$tf_error" ]]; then
+      echo ""
+      echo "${RED}--- Terraform Error Detail ---${RESET}"
+      echo "$tf_error"
+      echo "${RED}-------------------------------${RESET}"
+      echo ""
+    else
+      echo "${YELLOW}  (See terraform.log for details)${RESET}"
+    fi
+  fi
+}
+
 # --- Debug & Argument Parsing ------------------------------------------------
 DEBUG=0
 CLEANUP_MODE=0
@@ -178,19 +195,20 @@ run_cleanup() {
 
   if [[ -f "main.tf" ]] && [[ -f "terraform.tfstate" || -d ".terraform" ]]; then
     log_info "Attempting ${BLUE}terraform destroy${RESET}..."
-    if terraform init -reconfigure &>/dev/null && \
-       terraform destroy -auto-approve -no-color &>/dev/null; then
+    if terraform init -reconfigure > terraform.log 2>&1 && \
+       terraform destroy -auto-approve -no-color > terraform.log 2>&1; then
       log_info "Terraform destroy succeeded."
     else
-      log_warn "Terraform destroy failed - running gcloud cleanup for each resource type."
-      echo ""
-      cleanup_gcloud
+      log_warn "Terraform destroy failed."
+      log_terraform_error
     fi
   else
-    log_info "No Terraform state found - running gcloud cleanup for each resource type."
-    echo ""
-    cleanup_gcloud
+    log_info "No Terraform state found."
   fi
+
+  log_info "Running gcloud cleanup to catch any orphaned resources..."
+  echo ""
+  cleanup_gcloud
 
   echo ""
   cleanup_terraform_files
@@ -607,14 +625,16 @@ EOL
   fi
 
   log_info "Initializing Terraform..."
-  if ! run_cmd terraform init >/dev/null; then
+  if ! terraform init > terraform.log 2>&1; then
     log_error "Terraform initialization failed."
+    log_terraform_error
     exit 1
   fi
 
   log_info "Applying Terraform configuration..."
   if ! terraform apply -auto-approve -no-color > terraform.log 2>&1; then
-    log_error "Terraform apply failed. Check ${BLUE}terraform.log${RESET} for details."
+    log_error "Terraform apply failed."
+    log_terraform_error
     exit 1
   fi
 
