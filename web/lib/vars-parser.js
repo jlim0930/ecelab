@@ -50,21 +50,20 @@ function versionToInt(version) {
 
 /**
  * Parse an OS option entry (pipe-delimited) into a structured object.
+ * Format: display|gcp_image|container|cversion|2nd_data_disk|selinux|single_machine|small_cluster
  */
 function parseOsEntry(entry) {
   const parts = entry.split('|');
   return {
-    display: parts[0],
-    image: parts[1],
-    container: parts[2],
-    cversion: parts[3],
-    disk2_x86: parts[4],
-    disk2_arm: parts[5],
-    selinux: parts[6],
-    type_single_x86: parts[7],
-    type_small_x86: parts[8],
-    type_single_arm: parts[9],
-    type_small_arm: parts[10],
+    display: parts[0] ?? '',
+    image: parts[1] ?? '',
+    container: parts[2] ?? '',
+    cversion: parts[3] ?? '',
+    disk2: parts[4] ?? '',
+    /** none | selinux — passed to Ansible as selinuxmode */
+    selinux: parts[5] ?? 'none',
+    typeSingle: parts[6] ?? '',
+    typeSmall: parts[7] ?? '',
   };
 }
 

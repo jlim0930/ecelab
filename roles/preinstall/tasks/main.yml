@@ -69,11 +69,12 @@
   register: ece_installer_download
   when: ece_installer_path is not defined
 
-- name: "[preinstall] Pre-pull ECE Docker image on all nodes"
-  ansible.builtin.shell:
-    cmd: >
-      {{ 'docker' if crt == 'docker' else 'podman' }} pull
-      {{ ece_docker_registry }}/{{ ece_docker_repository }}/elastic-cloud-enterprise:{{ ece_version }}
+- name: "[preinstall] Pre-pull ECE container image on all nodes"
+  ansible.builtin.command:
+    argv:
+      - "{{ crt }}"
+      - pull
+      - "{{ ece_docker_registry }}/{{ ece_docker_repository }}/elastic-cloud-enterprise:{{ ece_version }}"
   async: 600
   poll: 0
   register: ece_image_prepull

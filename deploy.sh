@@ -402,18 +402,17 @@ get_os_options_for_version() {
 }
 
 # Parse an OS option entry (pipe-delimited) and set global variables
+# Format: display|gcp_image|container|cversion|2nd_data_disk|selinux|single_machine|small_cluster_machine
+# selinux = none | selinux
 parse_os_entry() {
   local entry="$1"
-  IFS='|' read -r _display image container cversion _disk2_x86 _disk2_arm SELINUX \
-    _type_single_x86 _type_small_x86 _type_single_arm _type_small_arm <<< "$entry"
+  IFS='|' read -r _display image container cversion DISK2 SELINUX _type_single _type_small <<< "$entry"
 
-  # Determine architecture-specific values
-  if [[ "$_display" == *"arm64"* ]]; then
-    DISK2="$_disk2_arm"
-    TYPE=$([[ "$installtype" == "single" ]] && echo "$_type_single_arm" || echo "$_type_small_arm")
-  else
-    DISK2="$_disk2_x86"
-    TYPE=$([[ "$installtype" == "single" ]] && echo "$_type_single_x86" || echo "$_type_small_x86")
+  TYPE=$([[ "$installtype" == "single" ]] && echo "$_type_single" || echo "$_type_small")
+
+  if [[ -z "${TYPE}" ]]; then
+    log_error "Machine type resolved empty for entry starting with: ${_display}. Check the type fields in ${BLUE}vars${RESET} for this OS option."
+    exit 1
   fi
 }
 
@@ -504,6 +503,12 @@ setup_terraform() {
   local count
   count=$([[ "${installtype}" == "small" ]] && echo 3 || echo 1)
 
+  # c4a (Axion) Arm instances use hyperdisk-balanced for the data volume; x86 n1 uses DISK_TYPE from vars.
+  local data_disk_type="${DISK_TYPE}"
+  if [[ "${TYPE}" == c4a-* ]]; then
+    data_disk_type="hyperdisk-balanced"
+  fi
+
   cat > main.tf << EOL
 provider "google" {
   project = "${PROJECT_ID}"
@@ -530,7 +535,7 @@ resource "google_compute_disk" "data_disk" {
 
   count = ${count}
   name  = "${USERNAME}-ecelab-data-disk-\${count.index + 1}"
-  type  = "${DISK_TYPE}"
+  type  = "${data_disk_type}"
   zone  = random_shuffle.zone_selection.result[count.index]
   size  = 150
 }

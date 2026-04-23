@@ -50,12 +50,12 @@
   register: secrets_file
   failed_when: not secrets_file.stat.exists
 
-- name: "[eceinstall] Read the bootstrap secrets"
-  ansible.builtin.command:
-    cmd: cat {{ data_dir }}/elastic/bootstrap-state/bootstrap-secrets.json
+- name: "[eceinstall] Read the bootstrap secrets from the primary"
+  ansible.builtin.slurp:
+    path: "{{ data_dir }}/elastic/bootstrap-state/bootstrap-secrets.json"
   register: secrets
 
-- name: "[eceinstall] Fetch the bootstrap secrets"
+- name: "[eceinstall] Fetch the bootstrap secrets to the controller"
   ansible.builtin.fetch:
     src: "{{ data_dir }}/elastic/bootstrap-state/bootstrap-secrets.json"
     dest: bootstrap-secrets.local.json
@@ -63,7 +63,7 @@
 
 - name: "[eceinstall] Parse bootstrap secrets"
   ansible.builtin.set_fact:
-    install_secrets: "{{ secrets.stdout | from_json }}"
+    install_secrets: "{{ (secrets.content | b64decode) | from_json }}"
 
 - name: "[eceinstall] Set adminconsole root password"
   ansible.builtin.set_fact:

@@ -198,7 +198,7 @@ All configuration lives in the `vars` file:
 |----------|---------|-------------|
 | `PROJECT_ID` | `elastic-support` | GCP project ID |
 | `REGION` | `us-central1` | GCP region (use `us-central1` or `us-east1` due to VPC) |
-| `DISK_TYPE` | `pd-balanced` | Data disk type (`pd-ssd` for faster bootstrap, `pd-balanced` for lower cost) |
+| `DISK_TYPE` | `pd-balanced` | **x86_64 (n1-*)** attached data volume: `pd-ssd` (faster bootstrap) or `pd-balanced` (lower cost). **arm64 (c4a-standard-*)** always uses `hyperdisk-balanced` for that volume; `DISK_TYPE` is ignored in that case (see `setup_terraform` in `deploy.sh`) |
 | `MAX_RUN_DAYS` | `7` | Auto-terminate instances after this many days |
 | `ECE_VERSIONS` | *(array)* | List of ECE versions shown in menus |
 | `OS_OPTIONS_V4` | *(array)* | OS choices for ECE ≥ 4.0.0 |
@@ -214,16 +214,23 @@ All configuration lives in the `vars` file:
 
 ### Adding a New OS Option
 
-Add a pipe-delimited entry to the appropriate `OS_OPTIONS_V*` array:
+Add one pipe-delimited line per menu choice. Each line has **eight** fields; there are no unused columns for “the other” architecture (each row is one image + one disk + instance sizes + SELinux mode).
 
 ```
-"Display Name|gcp-image|container|version|disk_x86|disk_arm|selinux|type_single_x86|type_small_x86|type_single_arm|type_small_arm"
+"Display name|GCP image|container runtime|runtime version|2nd data disk|selinux|single-node type|small (3-node) type"
 ```
 
-Example:
+- **2nd data disk** — block device for LVM (e.g. `sdb` on x86, `nvme0n2` on arm64 for the matching GCP image).  
+- **selinux** — `none` or `selinux` (passed to Ansible as `selinuxmode`; use `none` for Ubuntu). For Rocky, add a second row with the same image and `selinux` if you want an enforcing SELinux option.  
+- **Single / small** — GCP `machineType` for `single` vs `small` install size. Use types that match the image’s CPU architecture.
+
+x86_64, arm64, and Rocky SELinux examples:
 
 ```
-"Rocky 9 - Podman - x86_64|rocky-linux-cloud/rocky-linux-9-optimized-gcp|podman|5|sdb|nvme0n2|none|n1-highmem-8|n1-standard-8|t2a-standard-16|t2a-standard-8"
+"Rocky 9 - Podman - x86_64|rocky-linux-cloud/rocky-linux-9-optimized-gcp|podman|5|sdb|none|n1-highmem-8|n1-standard-8"
+"Rocky 9 - Podman - x86_64 - selinux|rocky-linux-cloud/rocky-linux-9-optimized-gcp|podman|5|sdb|selinux|n1-highmem-8|n1-standard-8"
+"Rocky 9 - Podman - arm64|rocky-linux-cloud/rocky-linux-9-optimized-gcp-arm64|podman|5|nvme0n2|none|c4a-standard-16|c4a-standard-8"
+"Ubuntu 22.04 - Docker 26.0 - x86_64|ubuntu-os-cloud/ubuntu-minimal-2204-lts|docker|26.0|sdb|none|n1-highmem-8|n1-standard-8"
 ```
 
 ## Project Structure
@@ -245,7 +252,6 @@ ecelab/
 │   │   │   ├── subtasks/  #     Modular config tasks
 │   │   │   ├── Ubuntu-*/  #     Ubuntu-specific tasks
 │   │   │   └── Rocky-*/   #     Rocky-specific tasks
-│   │   ├── handlers/      #   Ansible handlers
 │   │   └── templates/     #   Jinja2 templates
 │   └── eceinstall/        # ECE installation role
 │       ├── defaults/      #   Default variables (memory, URLs)

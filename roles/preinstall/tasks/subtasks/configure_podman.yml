@@ -50,9 +50,6 @@
     line: "overlay"
     create: true
 
-- name: "[preinstall] Reload systemd"
-  ansible.builtin.command: systemctl daemon-reload
-
 - name: "[preinstall] Ensure Podman services and socket are enabled and started"
   ansible.builtin.systemd_service:
     name: "{{ item }}"
