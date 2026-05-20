@@ -61,9 +61,9 @@ OS_OPTIONS_V4=(
   "Ubuntu 22.04 - Docker 26.0 - arm64|ubuntu-os-cloud/ubuntu-minimal-2204-lts-arm64|docker|26.0|nvme0n2|none|c4a-standard-16|c4a-standard-8"
   "Ubuntu 22.04 - Docker 27.0 - x86_64|ubuntu-os-cloud/ubuntu-minimal-2204-lts|docker|27.0|sdb|none|n1-highmem-8|n1-standard-8"
   "Ubuntu 22.04 - Docker 27.0 - arm64|ubuntu-os-cloud/ubuntu-minimal-2204-lts-arm64|docker|27.0|nvme0n2|none|c4a-standard-16|c4a-standard-8"
-  "Ubuntu 24.04 - Docker 26.0 - x86_64|ubuntu-os-cloud/ubuntu-minimal-2404-lts|docker|26.0|sdb|none|n1-highmem-8|n1-standard-8"
+  "Ubuntu 24.04 - Docker 26.0 - x86_64|ubuntu-os-cloud/ubuntu-minimal-2404-lts-amd64|docker|26.0|sdb|none|n1-highmem-8|n1-standard-8"
   "Ubuntu 24.04 - Docker 26.0 - arm64|ubuntu-os-cloud/ubuntu-minimal-2404-lts-arm64|docker|26.0|nvme0n2|none|c4a-standard-16|c4a-standard-8"
-  "Ubuntu 24.04 - Docker 27.0 - x86_64|ubuntu-os-cloud/ubuntu-minimal-2404-lts|docker|27.0|sdb|none|n1-highmem-8|n1-standard-8"
+  "Ubuntu 24.04 - Docker 27.0 - x86_64|ubuntu-os-cloud/ubuntu-minimal-2404-lts-amd64|docker|27.0|sdb|none|n1-highmem-8|n1-standard-8"
   "Ubuntu 24.04 - Docker 27.0 - arm64|ubuntu-os-cloud/ubuntu-minimal-2404-lts-arm64|docker|27.0|nvme0n2|none|c4a-standard-16|c4a-standard-8"
 )
 

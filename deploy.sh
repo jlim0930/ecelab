@@ -9,8 +9,12 @@
 # runtime combinations. All version and OS data is defined in the 'vars' file.
 #
 # Usage:
-#   ./deploy.sh              # Interactive deployment
+#   ./deploy.sh              # Full deployment (same as --class3)
+#   ./deploy.sh --class1     # Terraform only: provision VMs, no OS config or ECE
+#   ./deploy.sh --class2     # Provision VMs + OS pre-configuration, no ECE install
+#   ./deploy.sh --class3     # Full deployment: VMs + OS config + ECE (default)
 #   ./deploy.sh --debug      # Deploy with debug output
+#   ./deploy.sh --help       # Show help and exit
 #   ./deploy.sh cleanup      # Destroy all resources
 #   ./deploy.sh find         # Show existing instances
 #
@@ -74,6 +78,32 @@ log_warn()  { echo "${YELLOW}[WARN]${RESET}  $*"; }
 log_error() { echo "${RED}[ERROR]${RESET} $*" >&2; }
 log_debug() { [[ "${DEBUG:-0}" -eq 1 ]] && echo "${BLUE}[DEBUG]${RESET} $*" || true; }
 
+# --- Help --------------------------------------------------------------------
+show_help() {
+  echo ""
+  echo "Usage: ./${SCRIPT_NAME} [OPTIONS]"
+  echo ""
+  echo "Options:"
+  echo "  --class1    Terraform only. Provisions GCP VMs without any OS configuration"
+  echo "              or ECE installation. Summary shows instance table only."
+  echo ""
+  echo "  --class2    Provisions GCP VMs and runs Ansible OS pre-configuration"
+  echo "              (installs container runtime, configures the OS). ECE is not"
+  echo "              installed. Summary shows instance table only."
+  echo ""
+  echo "  --class3    Full deployment: provision VMs, configure OS, and install ECE."
+  echo "              This is the default when no class flag is specified."
+  echo ""
+  echo "  --debug     Enable verbose Terraform and script debug output."
+  echo ""
+  echo "  --help, -h  Show this help message and exit."
+  echo ""
+  echo "Other commands:"
+  echo "  cleanup     Destroy all GCP resources provisioned for this user."
+  echo "  find        Display existing instances for this user."
+  echo ""
+}
+
 # --- Extract Terraform Error -------------------------------------------------
 log_terraform_error() {
   if [[ -f "terraform.log" ]]; then
@@ -95,12 +125,18 @@ log_terraform_error() {
 DEBUG=0
 CLEANUP_MODE=0
 FIND_MODE=0
+DEPLOY_CLASS="class3"
+SHOW_HELP=0
 
 for arg in "$@"; do
   case "$arg" in
     --debug)        DEBUG=1; export TF_LOG=DEBUG TF_LOG_PATH="terraform_debug.log"; set -x ;;
     cleanup|delete) CLEANUP_MODE=1 ;;
     find|info)      FIND_MODE=1 ;;
+    --class1)       DEPLOY_CLASS="class1" ;;
+    --class2)       DEPLOY_CLASS="class2" ;;
+    --class3)       DEPLOY_CLASS="class3" ;;
+    --help|-h)      SHOW_HELP=1 ;;
   esac
 done
 
@@ -235,6 +271,22 @@ fi
 # Find Instances
 # ==============================================================================
 
+find_instances_simple() {
+  local instance_count
+  instance_count=$(gcloud compute instances list --project "${PROJECT_ID}" \
+    --filter="name:${USERNAME}-ecelab" --format="value(name)" -q 2>/dev/null | wc -l)
+
+  if [[ "$instance_count" -gt 0 ]]; then
+    echo ""
+    gcloud compute instances list --project "${PROJECT_ID}" \
+      --filter="name:${USERNAME}-ecelab" \
+      --format="table[box](name:sort=1, zone.basename(), machineType.basename():label=\"MACHINE TYPE\", networkInterfaces[0].networkIP:label=\"INTERNAL IP\", networkInterfaces[0].accessConfigs[0].natIP:label=\"PUBLIC IP\", disks[0].licenses[0].basename():label=\"OS\", status)" -q
+    echo ""
+  else
+    log_warn "No instances found"
+  fi
+}
+
 find_instances() {
   local instance_count
   instance_count=$(gcloud compute instances list --project "${PROJECT_ID}" \
@@ -267,6 +319,12 @@ find_instances() {
 # --- Handle find mode --------------------------------------------------------
 if [[ "${FIND_MODE}" -eq 1 ]]; then
   find_instances
+  exit 0
+fi
+
+# --- Handle help -------------------------------------------------------------
+if [[ "${SHOW_HELP}" -eq 1 ]]; then
+  show_help
   exit 0
 fi
 
@@ -356,22 +414,26 @@ check_ssh_key() {
 check_for_updates
 check_project_id
 check_gcloud
-check_python
-check_pip
 check_required_tool "terraform" "Terraform is not installed. Install: brew install terraform"
 check_required_tool "jq"        "jq is not installed. Install: brew install jq"
-check_ssh_key
+if [[ "${DEPLOY_CLASS}" != "class1" ]]; then
+  check_python
+  check_pip
+  check_ssh_key
+fi
 
 # ==============================================================================
 # Python Virtual Environment & Ansible
 # ==============================================================================
 
-log_info "Configuring Python venv and installing Ansible ${ANSIBLE_VERSION}..."
-run_cmd "${PYTHON_BIN}" -m venv ecelab &>/dev/null || true
-# shellcheck source=/dev/null
-source ecelab/bin/activate 2>/dev/null || true
-run_cmd "${PIP_BIN}" install --upgrade pip &>/dev/null || true
-run_cmd "${PIP_BIN}" install "ansible==${ANSIBLE_VERSION}" &>/dev/null || true
+if [[ "${DEPLOY_CLASS}" != "class1" ]]; then
+  log_info "Configuring Python venv and installing Ansible ${ANSIBLE_VERSION}..."
+  run_cmd "${PYTHON_BIN}" -m venv ecelab &>/dev/null || true
+  # shellcheck source=/dev/null
+  source ecelab/bin/activate 2>/dev/null || true
+  run_cmd "${PIP_BIN}" install --upgrade pip &>/dev/null || true
+  run_cmd "${PIP_BIN}" install "ansible==${ANSIBLE_VERSION}" &>/dev/null || true
+fi
 
 # ==============================================================================
 # Interactive Selection Menus
@@ -392,15 +454,17 @@ else
   done
 fi
 
-# --- Select ECE Version ------------------------------------------------------
-if [[ -n "${PRESELECTED_version:-}" ]]; then
-  version="${PRESELECTED_version}"
-else
-  log_info "Select the ECE Version:"
-  select version in "${ECE_VERSIONS[@]}"; do
-    [[ -n "$version" ]] && break
-    log_warn "Invalid option."
-  done
+# --- Select ECE Version (class3 only) ----------------------------------------
+if [[ "${DEPLOY_CLASS}" == "class3" ]]; then
+  if [[ -n "${PRESELECTED_version:-}" ]]; then
+    version="${PRESELECTED_version}"
+  else
+    log_info "Select the ECE Version:"
+    select version in "${ECE_VERSIONS[@]}"; do
+      [[ -n "$version" ]] && break
+      log_warn "Invalid option."
+    done
+  fi
 fi
 
 # --- Determine OS Options Based on Version -----------------------------------
@@ -436,7 +500,11 @@ parse_os_entry() {
 
 # --- Select OS ---------------------------------------------------------------
 declare -a os_option_entries
-get_os_options_for_version
+if [[ "${DEPLOY_CLASS}" == "class3" ]]; then
+  get_os_options_for_version
+else
+  os_option_entries=("${OS_OPTIONS_V4[@]}")
+fi
 
 # Build display names array
 declare -a os_display_names
@@ -484,7 +552,11 @@ COLUMNS="${_orig_columns:-}"
 # --- Confirm Selections ------------------------------------------------------
 echo ""
 log_info "Using Project: ${BLUE}${PROJECT_ID}${RESET}, Region: ${BLUE}${REGION}${RESET}, MachineType: ${BLUE}${TYPE}${RESET}"
-log_info "ECE version: ${BLUE}${version}${RESET} OS: ${BLUE}${os}${RESET} Install Type: ${BLUE}${installtype}${RESET}"
+if [[ "${DEPLOY_CLASS}" == "class3" ]]; then
+  log_info "ECE version: ${BLUE}${version}${RESET} OS: ${BLUE}${os}${RESET} Install Type: ${BLUE}${installtype}${RESET}"
+else
+  log_info "OS: ${BLUE}${os}${RESET} Install Type: ${BLUE}${installtype}${RESET}"
+fi
 echo ""
 sleep 2
 
@@ -511,11 +583,6 @@ setup_terraform() {
     exit 1
   fi
 
-  # Write Terraform tfvars
-  local zones_str
-  zones_str="$(printf ',"%s"' "${valid_zones[@]}")"
-  echo "valid_zones = [${zones_str:1}]" > terraform.tfvars
-
   log_info "Creating Terraform configuration..."
 
   local count
@@ -534,13 +601,8 @@ provider "google" {
 }
 
 variable "valid_zones" {
-  description = "List of zones where the machine type is available"
+  description = "Ordered (pre-shuffled) list of zones to use for VM placement"
   type        = list(string)
-}
-
-resource "random_shuffle" "zone_selection" {
-  input        = var.valid_zones
-  result_count = ${count}
 }
 
 resource "google_compute_disk" "data_disk" {
@@ -554,7 +616,7 @@ resource "google_compute_disk" "data_disk" {
   count = ${count}
   name  = "${USERNAME}-ecelab-data-disk-\${count.index + 1}"
   type  = "${data_disk_type}"
-  zone  = random_shuffle.zone_selection.result[count.index]
+  zone  = element(var.valid_zones, count.index)
   size  = 150
 }
 
@@ -582,7 +644,7 @@ resource "google_compute_instance" "vm_instance" {
   count        = ${count}
   name         = "${USERNAME}-ecelab-\${count.index + 1}"
   machine_type = "${TYPE}"
-  zone         = random_shuffle.zone_selection.result[count.index]
+  zone         = element(var.valid_zones, count.index)
   tags         = ["ecelab"]
 
   boot_disk {
@@ -631,17 +693,91 @@ EOL
     exit 1
   fi
 
-  log_info "Applying Terraform configuration..."
-  if ! terraform apply -auto-approve -no-color > terraform.log 2>&1; then
-    log_error "Terraform apply failed."
-    log_terraform_error
-    exit 1
-  fi
+  # Shuffle valid_zones in bash (Fisher-Yates) so element() distributes VMs randomly.
+  # This replaces Terraform's random_shuffle, which required len(zones) >= count.
+  local -a _sz=("${valid_zones[@]}")
+  local _si _sj _stmp
+  for (( _si=${#_sz[@]}-1; _si>0; _si-- )); do
+    _sj=$(( RANDOM % (_si+1) ))
+    _stmp="${_sz[$_si]}"; _sz[$_si]="${_sz[$_sj]}"; _sz[$_sj]="$_stmp"
+  done
+  local zones_str
+  zones_str="$(printf ',"%s"' "${_sz[@]}")"
+  echo "valid_zones = [${zones_str:1}]" > terraform.tfvars
 
-  log_info "Terraform apply completed successfully."
+  log_info "Applying Terraform configuration..."
+
+  local max_zone_retries=${#valid_zones[@]}
+  local attempt=0
+  local -a excluded_zones=()
+
+  while true; do
+    if terraform apply -auto-approve -no-color > terraform.log 2>&1; then
+      log_info "Terraform apply completed successfully."
+      break
+    fi
+
+    # Detect a zone capacity error and extract the failing zone
+    local failed_zone=""
+    if grep -q "does not have enough resources" terraform.log; then
+      failed_zone="$(grep -oE "zones/[a-z0-9-]+" terraform.log | head -1 | sed 's|zones/||')"
+    fi
+
+    if [[ -z "$failed_zone" ]]; then
+      log_error "Terraform apply failed."
+      log_terraform_error
+      exit 1
+    fi
+
+    attempt=$(( attempt + 1 ))
+    log_warn "Zone ${BLUE}${failed_zone}${RESET} has insufficient capacity for ${BLUE}${TYPE}${RESET}. (attempt ${attempt}/${max_zone_retries})"
+    excluded_zones+=("$failed_zone")
+
+    if [[ $attempt -ge $max_zone_retries ]]; then
+      log_error "Terraform apply failed: capacity unavailable in all tried zones for ${BLUE}${TYPE}${RESET} in ${BLUE}${REGION}${RESET}."
+      exit 1
+    fi
+
+    # Rebuild zone list excluding all failed zones
+    local current_zones=()
+    local _z _ez _skip
+    for _z in "${valid_zones[@]}"; do
+      _skip=0
+      for _ez in "${excluded_zones[@]+"${excluded_zones[@]}"}"; do
+        [[ "$_z" == "$_ez" ]] && _skip=1 && break
+      done
+      [[ $_skip -eq 0 ]] && current_zones+=("$_z")
+    done
+
+    if [[ ${#current_zones[@]} -eq 0 ]]; then
+      log_error "No zones with available capacity for ${BLUE}${TYPE}${RESET} in ${BLUE}${REGION}${RESET}."
+      exit 1
+    fi
+
+    # Clean up partial resources before retrying
+    log_info "Cleaning up partial resources before retrying in another zone..."
+    terraform destroy -auto-approve -no-color > terraform.log 2>&1 || true
+
+    # Re-shuffle remaining zones and update tfvars
+    local -a _rz=("${current_zones[@]}")
+    local _ri _rj _rtmp
+    for (( _ri=${#_rz[@]}-1; _ri>0; _ri-- )); do
+      _rj=$(( RANDOM % (_ri+1) ))
+      _rtmp="${_rz[$_ri]}"; _rz[$_ri]="${_rz[$_rj]}"; _rz[$_rj]="$_rtmp"
+    done
+    zones_str="$(printf ',"%s"' "${_rz[@]}")"
+    echo "valid_zones = [${zones_str:1}]" > terraform.tfvars
+
+    log_info "Retrying Terraform apply (attempt $(( attempt + 1 ))/${max_zone_retries})..."
+  done
 }
 
 setup_terraform
+
+if [[ "${DEPLOY_CLASS}" == "class1" ]]; then
+  find_instances_simple
+  exit 0
+fi
 
 # ==============================================================================
 # Ansible Inventory & SSH Connectivity
@@ -753,16 +889,30 @@ run_ansible_playbooks() {
     done
   done
 
-  if ansible-playbook -i inventory.yml combined.yml \
-       --extra-vars "crt=${container} ece_version=${version} selinuxmode=${SELINUX} package=${cversion}"; then
-    echo ""
-    log_info "ECE installation complete!"
-    log_info "Installed ECE: ${BLUE}${version}${RESET} on ${BLUE}${os}${RESET}"
-    log_info "To ${RED}delete${RESET} the environment: ${BLUE}./${SCRIPT_NAME} cleanup${RESET}"
+  if [[ "${DEPLOY_CLASS}" == "class2" ]]; then
+    if ansible-playbook -i inventory.yml preinstall.yml \
+         --extra-vars "crt=${container} selinuxmode=${SELINUX} package=${cversion}"; then
+      echo ""
+      log_info "OS pre-configuration complete!"
+      log_info "Installed ${BLUE}${container}${RESET} on ${BLUE}${os}${RESET}"
+      log_info "To ${RED}delete${RESET} the environment: ${BLUE}./${SCRIPT_NAME} cleanup${RESET}"
+    else
+      log_error "Ansible playbook failed. Check ${BLUE}ecelab.log${RESET} for details."
+      log_error "To delete the environment: ${BLUE}./${SCRIPT_NAME} cleanup${RESET}"
+      exit 1
+    fi
   else
-    log_error "Ansible playbook failed. Check ${BLUE}ecelab.log${RESET} for details."
-    log_error "To delete the environment: ${BLUE}./${SCRIPT_NAME} cleanup${RESET}"
-    exit 1
+    if ansible-playbook -i inventory.yml combined.yml \
+         --extra-vars "crt=${container} ece_version=${version} selinuxmode=${SELINUX} package=${cversion}"; then
+      echo ""
+      log_info "ECE installation complete!"
+      log_info "Installed ECE: ${BLUE}${version}${RESET} on ${BLUE}${os}${RESET}"
+      log_info "To ${RED}delete${RESET} the environment: ${BLUE}./${SCRIPT_NAME} cleanup${RESET}"
+    else
+      log_error "Ansible playbook failed. Check ${BLUE}ecelab.log${RESET} for details."
+      log_error "To delete the environment: ${BLUE}./${SCRIPT_NAME} cleanup${RESET}"
+      exit 1
+    fi
   fi
 }
 
@@ -772,4 +922,8 @@ run_ansible_playbooks
 # Display Instance Information
 # ==============================================================================
 
-find_instances
+if [[ "${DEPLOY_CLASS}" == "class2" ]]; then
+  find_instances_simple
+else
+  find_instances
+fi
