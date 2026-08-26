@@ -9,6 +9,7 @@
     cmd: >
       /home/elastic/elastic-cloud-enterprise.sh
       install
+      --timeout-factor 3.0
       --availability-zone {{ availability_zone }}
       --cloud-enterprise-version {{ ece_version }}
       --docker-registry {{ ece_docker_registry }}

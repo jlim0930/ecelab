@@ -20,10 +20,10 @@ system_limits_file: "/etc/security/limits.d/70-cloudenterprise.conf"
 memory:
   runner: 1G
   allocator: 4G
-  proxy: 8G
-  zookeeper: 4G
+  proxy: 4G
+  zookeeper: 2G
   director: 1G
-  constructor: 4G
+  constructor: 2G
   adminconsole: 4G
 
 # Elastic Cloud Enterprise additional installer arguments
