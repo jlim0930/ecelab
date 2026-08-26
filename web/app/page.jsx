@@ -912,7 +912,22 @@ function DeploymentInfoPanel({ appState, hasDeployment, chosenOptions, instances
             <tbody>
               {instances.instances.map(vm => (
                 <tr key={vm.name}>
-                  <td style={{ color: 'var(--accent)', fontWeight: 500 }}>{vm.name}</td>
+                  <td style={{ fontWeight: 500 }}>
+                    {instances.projectId && vm.zone ? (
+                      <a
+                        href={`https://console.cloud.google.com/compute/instancesDetail/zones/${vm.zone}/instances/${vm.name}?project=${instances.projectId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: 'var(--accent)', textDecoration: 'none' }}
+                        onMouseOver={e => e.currentTarget.style.textDecoration = 'underline'}
+                        onMouseOut={e => e.currentTarget.style.textDecoration = 'none'}
+                      >
+                        {vm.name}
+                      </a>
+                    ) : (
+                      <span style={{ color: 'var(--accent)' }}>{vm.name}</span>
+                    )}
+                  </td>
                   <td className="mono">{vm.publicIp || '—'}</td>
                   <td className="mono">{vm.internalIp || '—'}</td>
                   <td>{vm.zone || '—'}</td>

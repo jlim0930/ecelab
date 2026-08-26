@@ -96,6 +96,19 @@ function getMaxRunDays() {
   }
 }
 
+/**
+ * Parse PROJECT_ID from vars file.
+ */
+function getProjectId() {
+  try {
+    const varsContent = fs.readFileSync(path.join(PROJECT_DIR, 'vars'), 'utf-8');
+    const match = varsContent.match(/^PROJECT_ID="?([^"\n]+)"?/m);
+    return match ? match[1].trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function GET() {
   try {
     let instances = [];
@@ -161,6 +174,7 @@ export async function GET() {
     // Get deployment creation time and max run days
     const createdAt = getDeploymentCreatedAt();
     const maxRunDays = getMaxRunDays();
+    const projectId = getProjectId();
 
     return NextResponse.json({
       instances,
@@ -168,6 +182,7 @@ export async function GET() {
       eceVersion,
       createdAt,
       maxRunDays,
+      projectId,
       consoleUrl: instances.length > 0 && instances[0].publicIp
         ? `https://${instances[0].publicIp}:12443`
         : null,
