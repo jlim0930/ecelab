@@ -80,6 +80,7 @@ export function getDeployOptions() {
   const versions = parseBashArray(content, 'ECE_VERSIONS');
 
   // Parse all OS option arrays
+  const osOptionsV42 = parseBashArray(content, 'OS_OPTIONS_V42').map(parseOsEntry);
   const osOptionsV4 = parseBashArray(content, 'OS_OPTIONS_V4').map(parseOsEntry);
   const osOptionsV38 = parseBashArray(content, 'OS_OPTIONS_V38').map(parseOsEntry);
   const osOptionsV37 = parseBashArray(content, 'OS_OPTIONS_V37').map(parseOsEntry);
@@ -90,7 +91,8 @@ export function getDeployOptions() {
     region,
     versions,
     osOptionsByRange: {
-      v4: osOptionsV4,    // >= 4.0.0
+      v42: osOptionsV42,  // >= 4.2.0
+      v4: osOptionsV4,    // >= 4.0.0, < 4.2.0
       v38: osOptionsV38,  // >= 3.8.0, < 4.0.0
       v37: osOptionsV37,  // >= 3.7.0, < 3.8.0
       v3: osOptionsV3,    // < 3.7.0
@@ -103,6 +105,7 @@ export function getDeployOptions() {
  */
 export function getOsOptionsForVersion(version, osOptionsByRange) {
   const v = versionToInt(version);
+  if (v >= versionToInt('4.2.0')) return osOptionsByRange.v42;
   if (v >= versionToInt('4.0.0')) return osOptionsByRange.v4;
   if (v >= versionToInt('3.8.0')) return osOptionsByRange.v38;
   if (v >= versionToInt('3.7.0')) return osOptionsByRange.v37;
