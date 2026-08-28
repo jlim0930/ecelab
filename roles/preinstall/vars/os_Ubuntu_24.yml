@@ -24,3 +24,12 @@ docker_version_map:
     keys:
       server: https://download.docker.com/linux/ubuntu/gpg
       id: 0EBFCD88
+  "29.3":
+    package:
+      - docker-ce=5:29.3.*
+      - docker-ce-cli=5:29.3.*
+      - containerd.io
+    repo: deb https://download.docker.com/linux/ubuntu noble stable
+    keys:
+      server: https://download.docker.com/linux/ubuntu/gpg
+      id: 0EBFCD88

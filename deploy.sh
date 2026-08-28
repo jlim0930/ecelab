@@ -472,7 +472,9 @@ get_os_options_for_version() {
   local ver_num
   ver_num="$(version_to_int "$version")"
 
-  if [[ "$ver_num" -ge "$(version_to_int '4.0.0')" ]]; then
+  if [[ "$ver_num" -ge "$(version_to_int '4.2.0')" ]]; then
+    os_option_entries=("${OS_OPTIONS_V42[@]}")
+  elif [[ "$ver_num" -ge "$(version_to_int '4.0.0')" ]]; then
     os_option_entries=("${OS_OPTIONS_V4[@]}")
   elif [[ "$ver_num" -ge "$(version_to_int '3.8.0')" ]]; then
     os_option_entries=("${OS_OPTIONS_V38[@]}")
@@ -503,7 +505,7 @@ declare -a os_option_entries
 if [[ "${DEPLOY_CLASS}" == "class3" ]]; then
   get_os_options_for_version
 else
-  os_option_entries=("${OS_OPTIONS_V4[@]}")
+  os_option_entries=("${OS_OPTIONS_V42[@]}")
 fi
 
 # Build display names array

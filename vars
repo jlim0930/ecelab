@@ -54,7 +54,35 @@ ECE_VERSIONS=(
 #   selinux = none | selinux  (for Ansible; Ubuntu rows use none)
 # One row = one full menu choice (image + instance sizes + SELinux mode).
 
-# OS options for ECE >= 4.0.0
+# OS options for ECE >= 4.2.0
+OS_OPTIONS_V42=(
+  "Rocky 8 - Podman - x86_64|rocky-linux-cloud/rocky-linux-8-optimized-gcp|podman|4|sdb|none|${INSTANCE_X86_SINGLE}|${INSTANCE_X86_SMALL}"
+  "Rocky 8 - Podman - x86_64 - selinux|rocky-linux-cloud/rocky-linux-8-optimized-gcp|podman|4|sdb|selinux|${INSTANCE_X86_SINGLE}|${INSTANCE_X86_SMALL}"
+  "Rocky 8 - Podman - arm64|rocky-linux-cloud/rocky-linux-8-optimized-gcp-arm64|podman|4|nvme0n2|none|${INSTANCE_ARM_SINGLE}|${INSTANCE_ARM_SMALL}"
+  "Rocky 8 - Podman - arm64 - selinux|rocky-linux-cloud/rocky-linux-8-optimized-gcp-arm64|podman|5|nvme0n2|selinux|${INSTANCE_ARM_SINGLE}|${INSTANCE_ARM_SMALL}"
+  "Rocky 9 - Podman - x86_64|rocky-linux-cloud/rocky-linux-9-optimized-gcp|podman|5|sdb|none|${INSTANCE_X86_SINGLE}|${INSTANCE_X86_SMALL}"
+  "Rocky 9 - Podman - x86_64 - selinux|rocky-linux-cloud/rocky-linux-9-optimized-gcp|podman|5|sdb|selinux|${INSTANCE_X86_SINGLE}|${INSTANCE_X86_SMALL}"
+  "Rocky 9 - Podman - arm64|rocky-linux-cloud/rocky-linux-9-optimized-gcp-arm64|podman|5|nvme0n2|none|${INSTANCE_ARM_SINGLE}|${INSTANCE_ARM_SMALL}"
+  "Rocky 9 - Podman - arm64 - selinux|rocky-linux-cloud/rocky-linux-9-optimized-gcp-arm64|podman|5|nvme0n2|selinux|${INSTANCE_ARM_SINGLE}|${INSTANCE_ARM_SMALL}"
+  "Rocky 10 - Podman - x86_64|rocky-linux-cloud/rocky-linux-10-optimized-gcp|podman|5|sdb|none|${INSTANCE_X86_SINGLE}|${INSTANCE_X86_SMALL}"
+  "Rocky 10 - Podman - x86_64 - selinux|rocky-linux-cloud/rocky-linux-10-optimized-gcp|podman|5|sdb|selinux|${INSTANCE_X86_SINGLE}|${INSTANCE_X86_SMALL}"
+  "Rocky 10 - Podman - arm64|rocky-linux-cloud/rocky-linux-10-optimized-gcp-arm64|podman|5|nvme0n2|none|${INSTANCE_ARM_SINGLE}|${INSTANCE_ARM_SMALL}"
+  "Rocky 10 - Podman - arm64 - selinux|rocky-linux-cloud/rocky-linux-10-optimized-gcp-arm64|podman|5|nvme0n2|selinux|${INSTANCE_ARM_SINGLE}|${INSTANCE_ARM_SMALL}"
+  "Ubuntu 22.04 - Docker 25.0 - x86_64|ubuntu-os-cloud/ubuntu-minimal-2204-lts|docker|25.0|sdb|none|${INSTANCE_X86_SINGLE}|${INSTANCE_X86_SMALL}"
+  "Ubuntu 22.04 - Docker 25.0 - arm64|ubuntu-os-cloud/ubuntu-minimal-2204-lts-arm64|docker|25.0|nvme0n2|none|${INSTANCE_ARM_SINGLE}|${INSTANCE_ARM_SMALL}"
+  "Ubuntu 22.04 - Docker 26.0 - x86_64|ubuntu-os-cloud/ubuntu-minimal-2204-lts|docker|26.0|sdb|none|${INSTANCE_X86_SINGLE}|${INSTANCE_X86_SMALL}"
+  "Ubuntu 22.04 - Docker 26.0 - arm64|ubuntu-os-cloud/ubuntu-minimal-2204-lts-arm64|docker|26.0|nvme0n2|none|${INSTANCE_ARM_SINGLE}|${INSTANCE_ARM_SMALL}"
+  "Ubuntu 22.04 - Docker 27.0 - x86_64|ubuntu-os-cloud/ubuntu-minimal-2204-lts|docker|27.0|sdb|none|${INSTANCE_X86_SINGLE}|${INSTANCE_X86_SMALL}"
+  "Ubuntu 22.04 - Docker 27.0 - arm64|ubuntu-os-cloud/ubuntu-minimal-2204-lts-arm64|docker|27.0|nvme0n2|none|${INSTANCE_ARM_SINGLE}|${INSTANCE_ARM_SMALL}"
+  "Ubuntu 24.04 - Docker 26.0 - x86_64|ubuntu-os-cloud/ubuntu-minimal-2404-lts-amd64|docker|26.0|sdb|none|${INSTANCE_X86_SINGLE}|${INSTANCE_X86_SMALL}"
+  "Ubuntu 24.04 - Docker 26.0 - arm64|ubuntu-os-cloud/ubuntu-minimal-2404-lts-arm64|docker|26.0|nvme0n2|none|${INSTANCE_ARM_SINGLE}|${INSTANCE_ARM_SMALL}"
+  "Ubuntu 24.04 - Docker 27.0 - x86_64|ubuntu-os-cloud/ubuntu-minimal-2404-lts-amd64|docker|27.0|sdb|none|${INSTANCE_X86_SINGLE}|${INSTANCE_X86_SMALL}"
+  "Ubuntu 24.04 - Docker 27.0 - arm64|ubuntu-os-cloud/ubuntu-minimal-2404-lts-arm64|docker|27.0|nvme0n2|none|${INSTANCE_ARM_SINGLE}|${INSTANCE_ARM_SMALL}"
+  "Ubuntu 24.04 - Docker 29.3 - x86_64|ubuntu-os-cloud/ubuntu-minimal-2404-lts-amd64|docker|29.3|sdb|none|${INSTANCE_X86_SINGLE}|${INSTANCE_X86_SMALL}"
+  "Ubuntu 24.04 - Docker 29.3 - arm64|ubuntu-os-cloud/ubuntu-minimal-2404-lts-arm64|docker|29.3|nvme0n2|none|${INSTANCE_ARM_SINGLE}|${INSTANCE_ARM_SMALL}"
+)
+
+# OS options for ECE >= 4.0.0 and < 4.2.0
 OS_OPTIONS_V4=(
   "Rocky 8 - Podman - x86_64|rocky-linux-cloud/rocky-linux-8-optimized-gcp|podman|4|sdb|none|${INSTANCE_X86_SINGLE}|${INSTANCE_X86_SMALL}"
   "Rocky 8 - Podman - x86_64 - selinux|rocky-linux-cloud/rocky-linux-8-optimized-gcp|podman|4|sdb|selinux|${INSTANCE_X86_SINGLE}|${INSTANCE_X86_SMALL}"
