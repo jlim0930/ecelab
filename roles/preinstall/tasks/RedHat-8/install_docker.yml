@@ -1,0 +1,30 @@
+---
+- name: "[preinstall] Add Docker repository"
+  ansible.builtin.yum_repository:
+    name: "{{ docker_version_map[docker_version]['name'] }}"
+    description: "Docker repository"
+    file: docker-ce
+    baseurl: "{{ docker_version_map[docker_version]['repo'] }}"
+    enabled: true
+    gpgcheck: false
+  register: repo_installed
+  retries: 10
+  delay: 5
+  until: repo_installed is succeeded
+  ignore_errors: true
+
+- name: "[preinstall] Install Docker (asynchronously)"
+  ansible.builtin.package:
+    name: "{{ docker_version_map[docker_version]['package'] }}"
+    state: present
+  async: 300
+  poll: 0
+  register: crt_installed
+
+- name: "[preinstall] Lock docker package versions with dnf_versionlock"
+  community.general.dnf_versionlock:
+    name: "{{ docker_version_map[docker_version]['package'] }}"
+    state: present
+  async: 300
+  poll: 0
+  register: lock_docker_versions

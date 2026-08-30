@@ -38,6 +38,12 @@
         mode: '0440'
         validate: 'visudo -cf %s'
 
+- name: "[preinstall] Ensure cloud.cfg.d directory exists"
+  ansible.builtin.file:
+    path: /etc/cloud/cloud.cfg.d
+    state: directory
+    mode: '0755'
+
 - name: "[preinstall] Configure boot user"
   ansible.builtin.template:
     src: elastic.cfg.j2

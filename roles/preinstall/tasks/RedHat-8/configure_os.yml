@@ -23,8 +23,6 @@
       - iptables
       - dnf-plugins-core
       - python3-dnf-plugin-versionlock
-      - containernetworking-plugins
-      - policycoreutils-python-utils
     state: present
     update_cache: true
   register: install_packages
@@ -54,10 +52,10 @@
     enabled: false
   ignore_errors: true
 
-#- name: "[preinstall] Replace NAME in /etc/os-release based on container runtime"
-#  ansible.builtin.lineinfile:
-#    path: /etc/os-release
-#    regexp: '^NAME="Rocky Linux"$'
-#    line: "{{ 'NAME=\"CentOS Linux\"' if crt == 'docker' else 'NAME=\"Red Hat Enterprise\"' }}"
-#  when:
-#    - ece_version is version('3.7.0', '<')
+# - name: "[preinstall] Replace NAME in /etc/os-release based on container runtime"
+#   ansible.builtin.lineinfile:
+#     path: /etc/os-release
+#     regexp: '^NAME="Red Hat Enterprise Linux"$'
+#     line: "{{ 'NAME=\"CentOS Linux\"' if crt == 'docker' else 'NAME=\"Red Hat Enterprise\"' }}"
+#   when:
+#     - ece_version is version('3.7.0', '<')
