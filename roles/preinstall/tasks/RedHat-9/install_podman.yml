@@ -15,6 +15,14 @@
   poll: 0
   register: lock_podman_versions
 
+- name: "[preinstall] Copy containers.conf template before modifying"
+  ansible.builtin.copy:
+    src: /usr/share/containers/containers.conf
+    dest: /etc/containers/containers.conf
+    remote_src: true
+    force: false
+  ignore_errors: true
+
 - name: "[preinstall] Ensure network_backend is set to 'cni' in containers.conf"
   ansible.builtin.ini_file:
     path: /etc/containers/containers.conf

@@ -32,6 +32,15 @@
     owner: root
     group: root
 
+- name: "[preinstall] Configure container ulimits in containers.conf"
+  ansible.builtin.ini_file:
+    path: /etc/containers/containers.conf
+    section: containers
+    option: default_ulimits
+    value: '["nofile=1024000:1024000", "memlock=-1:-1", "nproc=-1:-1"]'
+    no_extra_spaces: true
+    create: true
+
 - name: "[preinstall] Update storage configuration in /etc/containers/storage.conf"
   ansible.builtin.lineinfile:
     path: /etc/containers/storage.conf

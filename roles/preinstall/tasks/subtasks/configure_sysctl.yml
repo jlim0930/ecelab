@@ -10,3 +10,10 @@
   loop: "{{ ece_sysctl_parameters }}"
   loop_control:
     label: "{{ item.name }}"
+
+- name: "[preinstall] Restart NetworkManager to apply network sysctl settings"
+  ansible.builtin.systemd_service:
+    name: NetworkManager
+    state: restarted
+  when: ansible_os_family == "RedHat"
+  ignore_errors: true

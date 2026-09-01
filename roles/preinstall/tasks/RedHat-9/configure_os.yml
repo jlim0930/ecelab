@@ -14,6 +14,17 @@
   until: remove_packages is succeeded
   ignore_errors: true
 
+- name: "[preinstall] Remove conflicting container packages"
+  ansible.builtin.package:
+    name:
+      - docker
+      - docker-ce
+      - podman
+      - podman-remote
+      - containerd.io
+    state: absent
+  ignore_errors: true
+
 - name: "[preinstall] Install required system packages"
   ansible.builtin.package:
     name:
@@ -25,6 +36,8 @@
       - python3-dnf-plugin-versionlock
       - containernetworking-plugins
       - policycoreutils-python-utils
+      - sysstat
+      - net-tools
     state: present
     update_cache: true
   register: install_packages
@@ -35,8 +48,8 @@
 
 - name: "[preinstall] Configure SELinux state"
   ansible.builtin.selinux:
-    state: "{{ 'enforcing' if selinuxmode == 'selinux' else 'disabled' }}"
-    policy: "{{ 'targeted' if selinuxmode == 'selinux' else omit }}"
+    state: "{{ 'enforcing' if selinuxmode == 'selinux' else 'permissive' }}"
+    policy: targeted
   when: selinuxmode in ['selinux', 'none']
   register: selinux_status
 
