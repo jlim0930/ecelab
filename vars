@@ -12,6 +12,7 @@ REGION="us-central1"          # GCP region (us-central1 or us-east1 due to VPC)
 # Data disk (attached volume) for Terraform. x86_64 (n1-*) uses this. arm64 (c4a-*) always uses
 # hyperdisk-balanced in deploy.sh — see setup_terraform.
 DISK_TYPE="pd-balanced"       # x86: pd-ssd (faster) or pd-balanced; ignored for c4a (hyperdisk-balanced)
+#DISK_TYPE="hyperdisk-balanced"
 
 MAX_RUN_DAYS=7                # Auto-terminate instances after N days
 
@@ -20,6 +21,8 @@ MAX_RUN_DAYS=7                # Auto-terminate instances after N days
 # n1-highmem-16 (104 GB) is recommended for x86_64 single-node; n1-highmem-8 (52 GB) is too tight.
 INSTANCE_X86_SINGLE="n2-highmem-16"   # x86_64 single-node
 INSTANCE_X86_SMALL="n1-standard-8"    # x86_64 small-cluster node
+#INSTANCE_X86_SINGLE="n4d-highmem-8"
+#INSTANCE_X86_SMALL="n4d-standard-8"
 INSTANCE_ARM_SINGLE="c4a-standard-16" # arm64 single-node
 INSTANCE_ARM_SMALL="c4a-standard-8"   # arm64 small-cluster node
 
