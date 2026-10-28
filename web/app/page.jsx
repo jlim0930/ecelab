@@ -907,6 +907,7 @@ function DeploymentInfoPanel({ appState, hasDeployment, chosenOptions, instances
                 <th>Zone</th>
                 <th>Machine</th>
                 <th>Status</th>
+                <th>SSH command</th>
               </tr>
             </thead>
             <tbody>
@@ -936,6 +937,10 @@ function DeploymentInfoPanel({ appState, hasDeployment, chosenOptions, instances
                     <span className={`status-dot ${vm.status === 'RUNNING' ? 'running' : 'stopped'}`} />
                     {vm.status || '—'}
                   </td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    <SshCopyButton label="gcloud" variant="gcloud" cmd={gcloudSshCmd(vm, instances.projectId)} />
+                    <SshCopyButton label="direct" variant="direct" cmd={directSshCmd(vm)} />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -943,6 +948,38 @@ function DeploymentInfoPanel({ appState, hasDeployment, chosenOptions, instances
         </>
       )}
     </div>
+  );
+}
+
+// ─── SSH copy buttons ────────────────────────────────────────────────────────
+function gcloudSshCmd(vm, projectId) {
+  if (!vm.zone || !projectId) return null;
+  return `gcloud compute ssh --zone "${vm.zone}" "${vm.name}" --project "${projectId}"`;
+}
+
+function directSshCmd(vm) {
+  if (!vm.publicIp) return null;
+  return `ssh -i ~/.ssh/google_compute_engine ${vm.name.split('-')[0]}@${vm.publicIp}`;
+}
+
+function SshCopyButton({ label, cmd, variant }) {
+  const [done, setDone] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(cmd);
+      setDone(true);
+      setTimeout(() => setDone(false), 2000);
+    } catch { /* clipboard unavailable */ }
+  };
+  return (
+    <button
+      className={`ssh-copy-btn ssh-copy-${variant} ${done ? 'copied' : ''}`}
+      onClick={copy}
+      disabled={!cmd}
+      title={cmd || 'Not available for this instance'}
+    >
+      {done ? 'Copied' : label}
+    </button>
   );
 }
 
