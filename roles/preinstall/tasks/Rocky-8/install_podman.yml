@@ -18,11 +18,3 @@
   async: 300
   poll: 0
   register: crt_installed
-
-- name: "[preinstall] Lock Podman package versions with dnf_versionlock"
-  community.general.dnf_versionlock:
-    name: "{{ podman_version_map[podman_version]['package'] }}"
-    state: present
-  async: 300
-  poll: 0
-  register: lock_podman_versions

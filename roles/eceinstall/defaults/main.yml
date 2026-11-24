@@ -40,3 +40,11 @@ docker_bridge_ip: "172.17.42.1/16"
 # User and group id
 elastic_uid: 1234
 elastic_gid: 1234
+
+# ECE 4.2+ optional features
+# IPv6 egress from ECE containers (host must have working dual-stack connectivity).
+ece_ipv6_egress: false
+ece_ipv6_subnet_v6: "fd00:10:89::/64"   # Docker fixed-cidr-v6 / Podman ece-network IPv6 subnet
+ece_ipv6_subnet_v4: "10.89.0.0/24"      # Podman ece-network IPv4 subnet
+# Proxy Protocol v2 between the load balancer and ECE proxies.
+ece_proxy_protocol_v2: false

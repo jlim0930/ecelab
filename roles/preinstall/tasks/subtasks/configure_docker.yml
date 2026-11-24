@@ -1,4 +1,35 @@
 ---
+- name: "[preinstall] Lock docker package versions with dnf_versionlock"
+  community.general.dnf_versionlock:
+    name: "{{ docker_version_map[docker_version]['package'] }}"
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: "[preinstall] Create Docker configuration directory"
+  ansible.builtin.file:
+    path: /etc/docker
+    state: directory
+    mode: '0755'
+
+# Per ECE docs: default ulimits are not inherited from limits.conf, so the
+# daemon must define nofile, memlock and nproc.
+- name: "[preinstall] Configure Docker daemon (default ulimits, optional IPv6)"
+  vars:
+    docker_daemon_base:
+      default-ulimits:
+        nofile: { Name: nofile, Hard: 1024000, Soft: 1024000 }
+        memlock: { Name: memlock, Hard: -1, Soft: -1 }
+        nproc: { Name: nproc, Hard: -1, Soft: -1 }
+    docker_daemon_ipv6:
+      ipv6: true
+      fixed-cidr-v6: "{{ ece_ipv6_subnet_v6 }}"
+      ip6tables: true
+  ansible.builtin.copy:
+    dest: /etc/docker/daemon.json
+    content: "{{ docker_daemon_base | combine(docker_daemon_ipv6 if (ece_ipv6_egress | bool and ece_version is version('4.2.0', '>=')) else {}) | to_nice_json }}\n"
+    mode: '0644'
+  register: docker_daemon_json_result
+
 - name: "[preinstall] Ensure /etc/systemd/system/docker.service.d directory exists"
   ansible.builtin.file:
     path: /etc/systemd/system/docker.service.d
@@ -31,4 +62,4 @@
         state: started
         enabled: true
         daemon_reload: true
-  when: docker_conf_result.changed
+  when: docker_conf_result.changed or docker_daemon_json_result.changed

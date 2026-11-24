@@ -1,4 +1,9 @@
 ---
+- name: "[preinstall] Lock Podman package versions with dnf_versionlock"
+  community.general.dnf_versionlock:
+    name: "{{ podman_version_map[podman_version]['package'] }}"
+    state: present
+
 - name: "[preinstall] Stop the podman service"
   ansible.builtin.systemd_service:
     name: podman
@@ -58,8 +63,18 @@
     label: "{{ item.item }}"
   when: item.stat.exists
 
-# ECE 4.2 docs, RHEL 10: keep the default Netavark backend. Do not install
-# containernetworking-plugins and remove any leftover network_backend pin.
+# Network backend per ECE docs: CNI on RHEL/Rocky 8 and 9 (set explicitly so the
+# host does not depend on defaults), Netavark (default) on RHEL 10 where any
+# leftover cni pin must be removed and containernetworking-plugins not installed.
+- name: "[preinstall] RHEL/Rocky 8 and 9: set network_backend to cni"
+  ansible.builtin.ini_file:
+    path: /etc/containers/containers.conf
+    section: network
+    option: network_backend
+    value: '"cni"'
+    no_extra_spaces: true
+  when: ansible_distribution_major_version in ['8', '9']
+
 - name: "[preinstall] RHEL/Rocky 10: remove network_backend pin so Netavark is used"
   ansible.builtin.ini_file:
     path: /etc/containers/containers.conf
@@ -106,6 +121,36 @@
     - { key: 'driver', value: 'overlay' }
     - { key: 'runroot', value: '/mnt/data/docker/runroot/' }
     - { key: 'graphroot', value: '/mnt/data/docker' }
+
+- name: "[preinstall] Check whether the ece-network Podman network exists"
+  ansible.builtin.command: podman network inspect ece-network
+  register: ece_network_check
+  changed_when: false
+  failed_when: false
+  when:
+    - ece_ipv6_egress | bool
+    - ece_version is version('4.2.0', '>=')
+
+# ECE 4.2+: Podman cannot configure IPv4+IPv6 on the built-in default network via
+# containers.conf, so create a dual-stack network and make it the default.
+- name: "[preinstall] Create dual-stack Podman network ece-network"
+  ansible.builtin.command: >
+    podman network create --subnet {{ ece_ipv6_subnet_v4 }}
+    --subnet {{ ece_ipv6_subnet_v6 }} --ipv6 ece-network
+  when:
+    - ece_network_check is not skipped
+    - ece_network_check.rc != 0
+
+- name: "[preinstall] Set ece-network as the default Podman network"
+  ansible.builtin.ini_file:
+    path: /etc/containers/containers.conf
+    section: network
+    option: default_network
+    value: '"ece-network"'
+    no_extra_spaces: true
+  when:
+    - ece_ipv6_egress | bool
+    - ece_version is version('4.2.0', '>=')
 
 - name: "[preinstall] Append overlay to /etc/modules-load.d/overlay.conf"
   ansible.builtin.lineinfile:

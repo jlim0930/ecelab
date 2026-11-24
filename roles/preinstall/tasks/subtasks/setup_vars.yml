@@ -31,3 +31,11 @@
     that: "podman_version in podman_version_map.keys()"
     msg: "Podman version must be one of {{ podman_version_map.keys() }}"
   when: crt == "podman"
+
+- name: "[preinstall] Assert RHEL/Rocky 8 is version 8.5 or later (ECE requirement)"
+  ansible.builtin.assert:
+    that: ansible_distribution_version is version('8.5', '>=')
+    msg: "ECE requires RHEL/Rocky Linux 8.5 or later; found {{ ansible_distribution_version }}"
+  when:
+    - ansible_os_family == "RedHat"
+    - ansible_distribution_major_version == "8"

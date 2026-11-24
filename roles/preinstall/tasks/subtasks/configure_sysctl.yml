@@ -11,6 +11,18 @@
   loop_control:
     label: "{{ item.name }}"
 
+- name: "[preinstall] Enable IPv6 forwarding for container IPv6 egress (ECE 4.2+)"
+  ansible.posix.sysctl:
+    name: net.ipv6.conf.all.forwarding
+    value: '1'
+    state: present
+    sysctl_file: "{{ sysctl_settings_file }}"
+    sysctl_set: true
+    reload: true
+  when:
+    - ece_ipv6_egress | bool
+    - ece_version is version('4.2.0', '>=')
+
 - name: "[preinstall] Restart NetworkManager to apply network sysctl settings"
   ansible.builtin.systemd_service:
     name: NetworkManager

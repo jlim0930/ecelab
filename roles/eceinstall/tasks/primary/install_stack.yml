@@ -19,6 +19,7 @@
       --host-storage-path {{ data_dir }}/elastic
       {{ "--podman" if crt == "podman" else "" }}
       {{ "--selinux" if selinuxmode == "selinux" else "" }}
+      {{ "--proxy-protocol-version 2 --proxy-protocol-lenient" if (ece_proxy_protocol_v2 | bool and ece_version is version('4.2.0', '>=')) else "" }}
       {{ extra_installer_args }}
   become: true
   become_method: sudo

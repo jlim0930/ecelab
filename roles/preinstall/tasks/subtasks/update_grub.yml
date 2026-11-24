@@ -11,6 +11,18 @@
     - 'cgroup.memory=nokmem'
   register: grub_modify_result
 
+# Debian/Ubuntu: regenerate grub.cfg from /etc/default/grub.
 - name: "[preinstall] Run bootloader update if grub config was changed"
   ansible.builtin.command: "{{ bootloader_update_command }}"
-  when: grub_modify_result.changed
+  when:
+    - grub_modify_result.changed
+    - ansible_os_family != "RedHat"
+
+# RHEL family: kernel args live in BLS entries (RHEL 9/10) and grub2-mkconfig
+# does not rewrite them, so follow the ECE docs and use grubby.
+- name: "[preinstall] Add required kernel args to all kernels with grubby"
+  ansible.builtin.command: >
+    grubby --update-kernel=ALL
+    --args='cgroup_enable=memory cgroup.memory=nokmem swapaccount=1'
+  when: ansible_os_family == "RedHat"
+  changed_when: true
