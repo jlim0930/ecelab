@@ -32,6 +32,43 @@
     owner: root
     group: root
 
+- name: "[preinstall] Check for vendor default container config files in /usr/share/containers"
+  ansible.builtin.stat:
+    path: "/usr/share/containers/{{ item }}"
+  loop:
+    - containers.conf
+    - storage.conf
+    - policy.json
+  register: vendor_container_files
+
+# Per the ECE 4.2 RHEL host docs, copy /usr/share/containers/containers.conf to
+# /etc/containers/ when missing. RHEL/Rocky 10 also ships no
+# /etc/containers/{storage.conf,policy.json} (defaults live in
+# /usr/share/containers), so seed those too (never overwrite) to avoid a
+# header-less storage.conf and a missing signature policy.
+- name: "[preinstall] Seed /etc/containers from vendor defaults when missing"
+  ansible.builtin.copy:
+    src: "{{ item.stat.path }}"
+    dest: "/etc/containers/{{ item.item }}"
+    remote_src: true
+    force: false
+    mode: '0644'
+  loop: "{{ vendor_container_files.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: item.stat.exists
+
+# ECE 4.2 docs, RHEL 10: keep the default Netavark backend. Do not install
+# containernetworking-plugins and remove any leftover network_backend pin.
+- name: "[preinstall] RHEL/Rocky 10: remove network_backend pin so Netavark is used"
+  ansible.builtin.ini_file:
+    path: /etc/containers/containers.conf
+    section: network
+    option: network_backend
+    state: absent
+    no_extra_spaces: true
+  when: ansible_distribution_major_version == '10'
+
 - name: "[preinstall] Configure container ulimits in containers.conf"
   ansible.builtin.ini_file:
     path: /etc/containers/containers.conf
@@ -39,6 +76,22 @@
     option: default_ulimits
     value: '["nofile=1024000:1024000", "memlock=-1:-1", "nproc=-1:-1"]'
     no_extra_spaces: true
+    create: true
+
+- name: "[preinstall] Ensure a minimal /etc/containers/policy.json exists as a last resort"
+  ansible.builtin.copy:
+    dest: /etc/containers/policy.json
+    content: |
+      {"default": [{"type": "insecureAcceptAnything"}]}
+    force: false
+    mode: '0644'
+
+- name: "[preinstall] Ensure [storage] section header exists in /etc/containers/storage.conf"
+  ansible.builtin.lineinfile:
+    path: /etc/containers/storage.conf
+    regexp: '^\[storage\]'
+    line: '[storage]'
+    insertbefore: BOF
     create: true
 
 - name: "[preinstall] Update storage configuration in /etc/containers/storage.conf"
@@ -50,6 +103,7 @@
     state: present
     create: true
   loop:
+    - { key: 'driver', value: 'overlay' }
     - { key: 'runroot', value: '/mnt/data/docker/runroot/' }
     - { key: 'graphroot', value: '/mnt/data/docker' }
 
